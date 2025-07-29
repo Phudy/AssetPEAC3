@@ -344,7 +344,7 @@
                             </div>
                             <div class="radio-group">
                                 <input type="radio" id="department" name="searchType" value="department">
-                                <label for="department">รหัสแผนก</label>
+                                <label for="department">รหัสศูนย์ต้นทุน</label>
                             </div>
                         </div>
                     </div>
@@ -390,7 +390,7 @@
                 </button>
                 
                 <div class="results-header">
-                    <h2 class="results-title">รายงานทรัพย์สินรายบุคคล/แผนก</h2>
+                    <h2 class="results-title">รายงานทรัพย์สินรายบุคคล/ศูนย์ต้นทุน</h2>
                     <p id="statusDateDisplay" class="status-date"></p>
                     <div class="results-info" id="resultsInfo"></div>
                 </div>
@@ -426,6 +426,11 @@
                 </div>
             </div>
         </div>
+
+        <footer style="text-align: center; color: white; margin-top: 3rem; padding-bottom: 1rem; font-size: 1rem;">
+            <p>ออกแบบและพัฒนาระบบโดย ผบส.กบฟ.(ก3)</p>
+        </footer>
+
     </div>
 
     <!-- Excel Generation Library -->
@@ -553,8 +558,8 @@
                     searchLabel.textContent = 'รหัสพนักงาน:';
                     searchInput.placeholder = 'กรุณาใส่รหัสพนักงาน';
                 } else {
-                    searchLabel.textContent = 'รหัสแผนก:';
-                    searchInput.placeholder = 'กรุณาใส่รหัสแผนก';
+                    searchLabel.textContent = 'รหัสศูนย์ต้นทุน:';
+                    searchInput.placeholder = 'กรุณาใส่รหัสศูนย์ต้นทุน';
                 }
             });
         });
@@ -675,7 +680,7 @@
             const resultsBody = document.getElementById('resultsBody');
             const statusDateDisplay = document.getElementById('statusDateDisplay');
 
-            statusDateDisplay.textContent = statusDate ? `สถานะ ณ วันที่ ${statusDate}` : '';
+            statusDateDisplay.textContent = statusDate ? `สิ้นสุด ณ งวดบัญชี ${statusDate}` : '';
 
             if (searchType === 'employee') {
                 const employee = data[0];
@@ -831,12 +836,39 @@
                 `;
             }
             
+            const printDate = new Date().toLocaleDateString('th-TH', {
+                day: 'numeric',
+                month: 'long',
+                year: 'numeric'
+            });
+
+            const reportFooterHtml = `
+                <div class="report-footer">
+                    <div class="report-source">
+                        <div>ข้อมูลจากรายงาน S_ALR_87011963</div>
+                        <div>พิมพ์รายงาน ณ วันที่ ${printDate}</div>
+                    </div>
+                    <div class="signature-section">
+                        <div class="signature-box">
+                            <div>หน่วยงานในเขต กฟก.3</div>
+                            <div class="signature-line">..................................</div>
+                            <div>หผ.บส.กบฟ.(ก3)</div>
+                        </div>
+                        <div class="signature-box">
+                            <div>กฟฟ.ในสังกัด กฟก.3</div>
+                            <div class="signature-line">..................................</div>
+                            <div>หผ.สน.</div>
+                        </div>
+                    </div>
+                </div>
+            `;
+
             const printWindow = window.open('', '_blank');
             printWindow.document.write(`
                 <!DOCTYPE html>
                 <html lang="th">
                 <head>
-                    <title>รายงานทรัพย์สินในครอบครอง</title>
+                    <title>รายงานยืนยันมูลค่าได้มาและค่าเสื่อมราคา</title>
                     <style>
                         @import url('https://fonts.googleapis.com/css2?family=Sarabun:wght@400;700&display=swap');
                         body {
@@ -877,6 +909,31 @@
                             background-color: #f2f2f2;
                             font-weight: bold;
                         }
+                        .report-footer {
+                            margin-top: 40px;
+                            display: flex;
+                            justify-content: space-between;
+                            align-items: flex-end;
+                            page-break-inside: avoid;
+                            width: 100%;
+                        }
+                        .report-source {
+                            font-size: 9pt;
+                            color: #555;
+                        }
+                        .signature-section {
+                            display: flex;
+                            justify-content: flex-end;
+                        }
+                        .signature-box {
+                            text-align: center;
+                            width: 250px;
+                            margin-left: 50px;
+                        }
+                        .signature-line {
+                            margin-top: 40px;
+                            margin-bottom: 5px;
+                        }
                         @media print {
                             @page {
                                 size: A4 landscape;
@@ -890,9 +947,9 @@
                 </head>
                 <body>
                     <div class="header">
-                        <h1>รายงานทรัพย์สินในครอบครอง</h1>
+                        <h1>รายงานยืนยันมูลค่าได้มาและค่าเสื่อมราคา</h1>
                         <h2>การไฟฟ้าส่วนภูมิภาค เขต(3) ภาคกลาง จังหวัดนครปฐม</h2>
-                        <h3>${statusDate ? `สถานะ ณ วันที่ ${statusDate}` : ''}</h3>
+                        <h3>${statusDate ? `สิ้นสุด ณ งวดบัญชี ${statusDate}` : ''}</h3>
                     </div>
                     <div class="info-section">
                         ${userInfoHtml}
@@ -916,6 +973,7 @@
                             ${summaryRowHtml}
                         </tfoot>
                     </table>
+                    ${reportFooterHtml}
                 </body>
                 </html>
             `);
