@@ -1,0 +1,824 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ระบบค้นหาทรัพย์สินรายบุคคล - การไฟฟ้าส่วนภูมิภาค</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            line-height: 1.6;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        .header {
+            text-align: center;
+            color: white;
+            margin-bottom: 30px;
+        }
+
+        .header h1 {
+            font-size: 2.5rem;
+            font-weight: 300;
+            margin-bottom: 10px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+        }
+
+        .header p {
+            font-size: 1.1rem;
+            opacity: 0.9;
+        }
+
+        .card {
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.1);
+            overflow: hidden;
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255,255,255,0.2);
+        }
+
+        .search-section {
+            padding: 40px;
+            text-align: center;
+        }
+
+        .search-title {
+            font-size: 1.8rem;
+            color: #333;
+            margin-bottom: 30px;
+            font-weight: 600;
+        }
+
+        .search-form {
+            max-width: 500px;
+            margin: 0 auto;
+        }
+
+        .form-group {
+            margin-bottom: 25px;
+            text-align: left;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            color: #555;
+            font-weight: 500;
+        }
+
+        .form-control {
+            width: 100%;
+            padding: 15px 20px;
+            border: 2px solid #e1e8ed;
+            border-radius: 12px;
+            font-size: 16px;
+            transition: all 0.3s ease;
+            background: rgba(255,255,255,0.9);
+        }
+
+        .form-control:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 4px rgba(102, 126, 234, 0.1);
+            transform: translateY(-2px);
+        }
+
+        .search-type {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 25px;
+            justify-content: center;
+        }
+
+        .radio-group {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .radio-group input[type="radio"] {
+            width: 20px;
+            height: 20px;
+            accent-color: #667eea;
+        }
+
+        .btn {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 15px 40px;
+            border-radius: 50px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 8px 25px rgba(102, 126, 234, 0.3);
+        }
+
+        .btn:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 15px 35px rgba(102, 126, 234, 0.4);
+        }
+
+        .btn:active {
+            transform: translateY(-1px);
+        }
+
+        .results-section {
+            display: none;
+            padding: 40px;
+        }
+
+        .results-header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        .results-title {
+            font-size: 1.8rem;
+            color: #333;
+            margin-bottom: 10px;
+        }
+
+        .results-info {
+            font-size: 1.1rem;
+            color: #666;
+            margin-bottom: 20px;
+        }
+
+        .export-buttons {
+            display: flex;
+            gap: 15px;
+            justify-content: center;
+            margin-bottom: 30px;
+        }
+
+        .btn-export {
+            background: white;
+            color: #667eea;
+            border: 2px solid #667eea;
+            padding: 12px 25px;
+            border-radius: 8px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .btn-export:hover {
+            background: #667eea;
+            color: white;
+            transform: translateY(-2px);
+        }
+
+        .table-container {
+            overflow-x: auto;
+            border-radius: 12px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            background: white;
+        }
+
+        th {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 15px 12px;
+            text-align: left;
+            font-weight: 600;
+            font-size: 14px;
+        }
+
+        td {
+            padding: 12px;
+            border-bottom: 1px solid #e1e8ed;
+            font-size: 14px;
+        }
+
+        tr:hover {
+            background: rgba(102, 126, 234, 0.05);
+        }
+
+        .btn-back {
+            background: #6c757d;
+            margin-bottom: 20px;
+        }
+
+        .btn-back:hover {
+            background: #5a6268;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 40px;
+            display: none;
+        }
+
+        .spinner {
+            display: inline-block;
+            width: 40px;
+            height: 40px;
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #667eea;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .error-message {
+            background: #f8d7da;
+            color: #721c24;
+            padding: 15px;
+            border-radius: 8px;
+            margin: 20px 0;
+            display: none;
+        }
+
+        .no-results {
+            text-align: center;
+            padding: 40px;
+            color: #666;
+            display: none;
+        }
+
+        @media (max-width: 768px) {
+            .header h1 {
+                font-size: 1.8rem;
+            }
+            
+            .search-section, .results-section {
+                padding: 20px;
+            }
+            
+            .export-buttons {
+                flex-direction: column;
+                align-items: center;
+            }
+            
+            .form-control {
+                padding: 12px 15px;
+            }
+            
+            .btn {
+                padding: 12px 30px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1><i class="fas fa-search"></i> ระบบค้นหาทรัพย์สินรายบุคคล</h1>
+            <p>การไฟฟ้าส่วนภูมิภาค เขต(3) ภาคกลาง จังหวัดนครปฐม</p>
+        </div>
+
+        <div class="card">
+            <!-- Search Section -->
+            <div class="search-section" id="searchSection">
+                <h2 class="search-title">ค้นหาข้อมูลทรัพย์สิน</h2>
+                
+                <form class="search-form" id="searchForm">
+                    <div class="form-group">
+                        <label>ประเภทการค้นหา:</label>
+                        <div class="search-type">
+                            <div class="radio-group">
+                                <input type="radio" id="employee" name="searchType" value="employee" checked>
+                                <label for="employee">รหัสพนักงาน</label>
+                            </div>
+                            <div class="radio-group">
+                                <input type="radio" id="department" name="searchType" value="department">
+                                <label for="department">รหัสแผนก</label>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="searchInput" id="searchLabel">รหัสพนักงาน:</label>
+                        <input type="text" 
+                               id="searchInput" 
+                               class="form-control" 
+                               placeholder="กรุณาใส่รหัสพนักงาน"
+                               required>
+                    </div>
+                    
+                    <button type="submit" class="btn">
+                        <i class="fas fa-search"></i> ค้นหา
+                    </button>
+                </form>
+            </div>
+
+            <!-- Loading -->
+            <div class="loading" id="loading">
+                <div class="spinner"></div>
+                <p style="margin-top: 20px;">กำลังค้นหาข้อมูล...</p>
+            </div>
+
+            <!-- Error Message -->
+            <div class="error-message" id="errorMessage"></div>
+
+            <!-- No Results -->
+            <div class="no-results" id="noResults">
+                <i class="fas fa-exclamation-triangle" style="font-size: 3rem; color: #ffc107; margin-bottom: 20px;"></i>
+                <h3>ไม่พบข้อมูล</h3>
+                <p>ไม่พบข้อมูลที่ตรงกับคำค้นหา กรุณาลองค้นหาใหม่อีกครั้ง</p>
+            </div>
+
+            <!-- Results Section -->
+            <div class="results-section" id="resultsSection">
+                <button class="btn btn-back" onclick="showSearchSection()">
+                    <i class="fas fa-arrow-left"></i> กลับหน้าค้นหา
+                </button>
+                
+                <div class="results-header">
+                    <h2 class="results-title">รายงานทรัพย์สินรายบุคคล/แผนก</h2>
+                    <div class="results-info" id="resultsInfo"></div>
+                </div>
+                
+                <div class="export-buttons">
+                    <button class="btn-export" onclick="printReport()">
+                        <i class="fas fa-print"></i> พิมพ์รายงาน
+                    </button>
+                    <button class="btn-export" onclick="exportToExcel()">
+                        <i class="fas fa-file-excel"></i> Export to Excel
+                    </button>
+                </div>
+                
+                <div class="table-container">
+                    <table id="resultsTable">
+                        <thead>
+                            <tr>
+                                <th>เลขทรัพย์สินหลัก</th>
+                                <th>เลขทรัพย์สินย่อย</th>
+                                <th>คำอธิบายทรัพย์สิน</th>
+                                <th>วันที่โอนเป็นทุน</th>
+                                <th>มูลค่าการได้มา</th>
+                                <th>ค่าเสื่อมสะสม</th>
+                                <th>มูลค่าตามบัญชี</th>
+                            </tr>
+                        </thead>
+                        <tbody id="resultsBody">
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Excel Generation Library -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+
+    <script>
+        // ========================================
+        // Google Sheets API Configuration
+        // ========================================
+        
+        const API_KEY = 'AIzaSyA5c8JZsxEC7JgLspIjuCU-CCsIAa7TtWg';
+        const SHEET_ID = '15nHQmmivX-8UaVFZ_DEsupVP1X0MEIfVWQ0oatmFjDM';
+        const SHEET_NAME = 'Data';
+        const DATA_RANGE = `${SHEET_NAME}!A2:Z70000`;
+        
+        // ========================================
+        // Column Mapping
+        // ========================================
+        const COLUMNS = {
+            // FIXED: Changed Department Code to Column B (index 1)
+            DEPARTMENT_CODE: 1,    // Column B (index 1) 
+            ASSET_MAIN: 3,         // Column D (index 3)
+            ASSET_SUB: 4,          // Column E (index 4)
+            ASSET_DESCRIPTION: 5,  // Column F (index 5)
+            TRANSFER_DATE: 8,      // Column I (index 8)
+            ACQUISITION_VALUE: 9,  // Column J (index 9)
+            DEPRECIATION: 10,      // Column K (index 10)
+            BOOK_VALUE: 11,        // Column L (index 11)
+            EMPLOYEE_CODE: 12,     // Column M (index 12)
+            EMPLOYEE_NAME: 13,     // Column N (index 13)
+            POSITION: 14,          // Column O (index 14)
+            DEPARTMENT: 15         // Column P (index 15)
+        };
+
+        // Global variables
+        let currentData = [];
+        let currentSearchInfo = {};
+        let allData = [];
+
+        // ========================================
+        // Google Sheets API Functions
+        // ========================================
+        
+        async function loadGoogleSheetsData() {
+            try {
+                const url = `https://sheets.googleapis.com/v4/spreadsheets/${SHEET_ID}/values/${DATA_RANGE}?key=${API_KEY}`;
+                const response = await fetch(url);
+                if (!response.ok) {
+                    const errorData = await response.json();
+                    console.error('Google Sheets API Error:', errorData);
+                    throw new Error(`HTTP error! status: ${response.status}. Check console for details.`);
+                }
+                const data = await response.json();
+                if (!data.values || data.values.length === 0) {
+                    throw new Error('No data found in the sheet or the range is empty.');
+                }
+                
+                allData = data.values.map(row => ({
+                    departmentCode: row[COLUMNS.DEPARTMENT_CODE] || '',
+                    assetMain: row[COLUMNS.ASSET_MAIN] || '',
+                    assetSub: row[COLUMNS.ASSET_SUB] || '',
+                    assetDescription: row[COLUMNS.ASSET_DESCRIPTION] || '',
+                    transferDate: row[COLUMNS.TRANSFER_DATE] || '',
+                    acquisitionValue: row[COLUMNS.ACQUISITION_VALUE] || '',
+                    accumulatedDepreciation: row[COLUMNS.DEPRECIATION] || '',
+                    bookValue: row[COLUMNS.BOOK_VALUE] || '',
+                    employeeCode: row[COLUMNS.EMPLOYEE_CODE] || '',
+                    employeeName: row[COLUMNS.EMPLOYEE_NAME] || '',
+                    position: row[COLUMNS.POSITION] || '',
+                    department: row[COLUMNS.DEPARTMENT] || ''
+                })).filter(row => 
+                    row.assetMain || row.employeeCode || row.departmentCode
+                );
+                
+                console.log(`Loaded ${allData.length} records from Google Sheets`);
+                
+                return true;
+                
+            } catch (error) {
+                console.error('Error loading Google Sheets data:', error);
+                throw error;
+            }
+        }
+
+        // ========================================
+        // Search Functions
+        // ========================================
+        
+        function searchByEmployeeCode(employeeCode) {
+            const searchTerm = employeeCode.trim().toLowerCase();
+            return allData.filter(item => 
+                item.employeeCode && 
+                item.employeeCode.toString().trim().toLowerCase().includes(searchTerm)
+            );
+        }
+
+        function searchByDepartmentCode(departmentCode) {
+            const searchTerm = departmentCode.trim().toLowerCase();
+            return allData.filter(item => 
+                item.departmentCode && 
+                item.departmentCode.toString().trim().toLowerCase().includes(searchTerm)
+            );
+        }
+
+        // ========================================
+        // UI Event Handlers
+        // ========================================
+
+        document.querySelectorAll('input[name="searchType"]').forEach(radio => {
+            radio.addEventListener('change', function() {
+                const searchLabel = document.getElementById('searchLabel');
+                const searchInput = document.getElementById('searchInput');
+                
+                if (this.value === 'employee') {
+                    searchLabel.textContent = 'รหัสพนักงาน:';
+                    searchInput.placeholder = 'กรุณาใส่รหัสพนักงาน';
+                } else {
+                    searchLabel.textContent = 'รหัสแผนก:';
+                    searchInput.placeholder = 'กรุณาใส่รหัสแผนก';
+                }
+            });
+        });
+
+        document.getElementById('searchForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            const searchType = document.querySelector('input[name="searchType"]:checked').value;
+            const searchValue = document.getElementById('searchInput').value.trim();
+            if (!searchValue) {
+                showError('กรุณาใส่ข้อมูลที่ต้องการค้นหา');
+                return;
+            }
+            await performSearch(searchType, searchValue);
+        });
+
+        // ========================================
+        // Initialize App
+        // ========================================
+        
+        window.addEventListener('DOMContentLoaded', async function() {
+            if (API_KEY === 'YOUR_API_KEY_HERE') {
+                showError('กรุณาใส่ API Key ของ Google Sheets ในโค้ด JavaScript ก่อนใช้งาน');
+                return;
+            }
+            
+            try {
+                showLoading();
+                await loadGoogleSheetsData();
+                showSearchSection();
+                
+                setTimeout(() => {
+                    const successMsg = document.createElement('div');
+                    successMsg.style.cssText = `
+                        position: fixed; top: 20px; right: 20px; background: #28a745; color: white;
+                        padding: 15px 20px; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+                        z-index: 1000; font-weight: 500;
+                    `;
+                    successMsg.innerHTML = `<i class="fas fa-check-circle"></i> โหลดข้อมูลสำเร็จ ${allData.length} รายการ`;
+                    document.body.appendChild(successMsg);
+                    setTimeout(() => successMsg.remove(), 3000);
+                }, 500);
+                
+            } catch (error) {
+                showError('ไม่สามารถโหลดข้อมูลจาก Google Sheets ได้ กรุณาตรวจสอบการตั้งค่า API, Sheet ID, ชื่อ Sheet และการแชร์ไฟล์');
+                console.error('Initialization error:', error);
+            }
+        });
+
+        async function performSearch(searchType, searchValue) {
+            showLoading();
+            
+            try {
+                if (allData.length === 0) {
+                    await loadGoogleSheetsData();
+                }
+                
+                let filteredData;
+                if (searchType === 'employee') {
+                    filteredData = searchByEmployeeCode(searchValue);
+                } else {
+                    filteredData = searchByDepartmentCode(searchValue);
+                }
+
+                if (filteredData.length === 0) {
+                    showNoResults();
+                    return;
+                }
+
+                currentData = filteredData;
+                currentSearchInfo = {
+                    type: searchType,
+                    value: searchValue,
+                    data: filteredData[0]
+                };
+
+                displayResults(filteredData, searchType);
+                
+            } catch (error) {
+                console.error('Search error:', error);
+                showError('เกิดข้อผิดพลาดในการค้นหา กรุณาตรวจสอบการเชื่อมต่ออินเทอร์เน็ตและลองใหม่อีกครั้ง');
+            }
+        }
+
+        function showLoading() {
+            document.getElementById('searchSection').style.display = 'none';
+            document.getElementById('resultsSection').style.display = 'none';
+            document.getElementById('errorMessage').style.display = 'none';
+            document.getElementById('noResults').style.display = 'none';
+            document.getElementById('loading').style.display = 'block';
+        }
+
+        function showError(message) {
+            document.getElementById('loading').style.display = 'none';
+            document.getElementById('resultsSection').style.display = 'none';
+            document.getElementById('noResults').style.display = 'none';
+            const errorDiv = document.getElementById('errorMessage');
+            errorDiv.textContent = message;
+            errorDiv.style.display = 'block';
+            document.getElementById('searchSection').style.display = 'block';
+        }
+
+        function showNoResults() {
+            document.getElementById('loading').style.display = 'none';
+            document.getElementById('resultsSection').style.display = 'none';
+            document.getElementById('errorMessage').style.display = 'none';
+            document.getElementById('noResults').style.display = 'block';
+            document.getElementById('searchSection').style.display = 'block';
+        }
+
+        function displayResults(data, searchType) {
+            document.getElementById('loading').style.display = 'none';
+            document.getElementById('searchSection').style.display = 'none';
+            document.getElementById('errorMessage').style.display = 'none';
+            document.getElementById('noResults').style.display = 'none';
+            document.getElementById('resultsSection').style.display = 'block';
+
+            const resultsInfo = document.getElementById('resultsInfo');
+            const resultsBody = document.getElementById('resultsBody');
+
+            if (searchType === 'employee') {
+                const employee = data[0];
+                resultsInfo.innerHTML = `
+                    <strong>${employee.employeeName || 'ไม่ระบุชื่อ'}</strong> | 
+                    ตำแหน่ง: ${employee.position || 'ไม่ระบุ'} | 
+                    สังกัด: ${employee.department || 'ไม่ระบุ'}
+                `;
+            } else {
+                const dept = data[0].department || data[0].departmentCode || 'ไม่ระบุแผนก';
+                resultsInfo.innerHTML = `สังกัด: ${dept}`;
+            }
+
+            resultsBody.innerHTML = '';
+
+            data.forEach(item => {
+                const row = resultsBody.insertRow();
+                row.innerHTML = `
+                    <td>${item.assetMain || '-'}</td>
+                    <td>${item.assetSub || '-'}</td>
+                    <td>${item.assetDescription || '-'}</td>
+                    <td>${item.transferDate || '-'}</td>
+                    <td style="text-align: right;">${formatNumber(item.acquisitionValue)}</td>
+                    <td style="text-align: right;">${formatNumber(item.accumulatedDepreciation)}</td>
+                    <td style="text-align: right;">${formatNumber(item.bookValue)}</td>
+                `;
+            });
+        }
+
+        function showSearchSection() {
+            document.getElementById('resultsSection').style.display = 'none';
+            document.getElementById('errorMessage').style.display = 'none';
+            document.getElementById('noResults').style.display = 'none';
+            document.getElementById('loading').style.display = 'none';
+            document.getElementById('searchSection').style.display = 'block';
+        }
+        
+        function formatNumber(value) {
+            if (!value || value === '') return '-';
+            const numValue = parseFloat(value.toString().replace(/,/g, ''));
+            if (isNaN(numValue)) return value;
+            return new Intl.NumberFormat('th-TH', {
+                minimumFractionDigits: 2,
+                maximumFractionDigits: 2
+            }).format(numValue);
+        }
+
+        // ========================================
+        // Export Functions
+        // ========================================
+
+        function printReport() {
+            const info = currentSearchInfo.data;
+            let tableRowsHtml = '';
+            currentData.forEach(item => {
+                tableRowsHtml += `
+                    <tr>
+                        <td>${item.assetMain || '-'}</td>
+                        <td>${item.assetSub || '-'}</td>
+                        <td>${item.assetDescription || '-'}</td>
+                        <td>${item.transferDate || '-'}</td>
+                        <td style="text-align: right;">${formatNumber(item.acquisitionValue)}</td>
+                        <td style="text-align: right;">${formatNumber(item.accumulatedDepreciation)}</td>
+                        <td style="text-align: right;">${formatNumber(item.bookValue)}</td>
+                    </tr>
+                `;
+            });
+
+            let userInfoHtml = '';
+            if (currentSearchInfo.type === 'employee') {
+                userInfoHtml = `
+                    <div class="info-grid">
+                        <div><strong>ชื่อ-สกุล:</strong> ${info.employeeName || '-'}</div>
+                        <div><strong>ตำแหน่ง:</strong> ${info.position || '-'}</div>
+                        <div><strong>สังกัด:</strong> ${info.department || '-'}</div>
+                    </div>
+                `;
+            } else {
+                userInfoHtml = `
+                    <div class="info-grid">
+                        <div><strong>สังกัด:</strong> ${info.department || info.departmentCode || '-'}</div>
+                    </div>
+                `;
+            }
+            
+            const printWindow = window.open('', '_blank');
+            printWindow.document.write(`
+                <!DOCTYPE html>
+                <html lang="th">
+                <head>
+                    <title>รายงานทรัพย์สินในครอบครอง</title>
+                    <style>
+                        @import url('https://fonts.googleapis.com/css2?family=Sarabun:wght@400;700&display=swap');
+                        body {
+                            font-family: 'Sarabun', sans-serif;
+                            margin: 20px;
+                        }
+                        .header {
+                            text-align: center;
+                            margin-bottom: 20px;
+                        }
+                        h1 { font-size: 18pt; margin: 0; }
+                        h2 { font-size: 16pt; margin: 0; font-weight: normal; }
+                        .info-section {
+                            margin-bottom: 20px;
+                            font-size: 12pt;
+                        }
+                        .info-grid {
+                            display: grid;
+                            grid-template-columns: repeat(3, 1fr);
+                            gap: 10px;
+                        }
+                        table {
+                            width: 100%;
+                            border-collapse: collapse;
+                            font-size: 10pt;
+                        }
+                        th, td {
+                            border: 1px solid #000;
+                            padding: 5px;
+                            text-align: left;
+                        }
+                        th {
+                            background-color: #f2f2f2;
+                            font-weight: bold;
+                        }
+                        @media print {
+                            @page {
+                                size: A4 landscape;
+                                margin: 1cm;
+                            }
+                            body {
+                                margin: 0;
+                            }
+                        }
+                    </style>
+                </head>
+                <body>
+                    <div class="header">
+                        <h1>รายงานทรัพย์สินในครอบครอง</h1>
+                        <h2>การไฟฟ้าส่วนภูมิภาค เขต(3) ภาคกลาง จังหวัดนครปฐม</h2>
+                    </div>
+                    <div class="info-section">
+                        ${userInfoHtml}
+                    </div>
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>เลขทรัพย์สินหลัก</th>
+                                <th>เลขทรัพย์สินย่อย</th>
+                                <th>คำอธิบายทรัพย์สิน</th>
+                                <th>วันที่โอนเป็นทุน</th>
+                                <th>มูลค่าการได้มา</th>
+                                <th>ค่าเสื่อมสะสม</th>
+                                <th>มูลค่าตามบัญชี</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${tableRowsHtml}
+                        </tbody>
+                    </table>
+                </body>
+                </html>
+            `);
+            printWindow.document.close();
+            printWindow.focus();
+            setTimeout(() => {
+                printWindow.print();
+                printWindow.close();
+            }, 250);
+        }
+
+        function exportToExcel() {
+            const ws = XLSX.utils.json_to_sheet(currentData.map(item => ({
+                'เลขทรัพย์สินหลัก': item.assetMain || '-',
+                'เลขทรัพย์สินย่อย': item.assetSub || '-',
+                'คำอธิบายทรัพย์สิน': item.assetDescription || '-',
+                'วันที่โอนเป็นทุน': item.transferDate || '-',
+                'มูลค่าการได้มา': parseFloat(item.acquisitionValue.toString().replace(/,/g, '')) || 0,
+                'ค่าเสื่อมสะสม': parseFloat(item.accumulatedDepreciation.toString().replace(/,/g, '')) || 0,
+                'มูลค่าตามบัญชี': parseFloat(item.bookValue.toString().replace(/,/g, '')) || 0,
+                'ชื่อผู้ครอบครอง': item.employeeName || '-',
+                'ตำแหน่ง': item.position || '-',
+                'สังกัด': item.department || '-'
+            })));
+
+            ws['!cols'] = [
+                { wch: 20 }, { wch: 20 }, { wch: 50 }, { wch: 20 },
+                { wch: 20 }, { wch: 20 }, { wch: 20 }, { wch: 30 },
+                { wch: 30 }, { wch: 30 }
+            ];
+
+            const wb = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(wb, ws, 'Asset Report');
+            XLSX.writeFile(wb, 'asset-report.xlsx');
+        }
+    </script>
+</body>
+</html>
