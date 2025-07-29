@@ -155,6 +155,13 @@
             margin-bottom: 10px;
         }
 
+        .status-date {
+            font-size: 1rem;
+            color: #555;
+            margin-top: -5px;
+            margin-bottom: 15px;
+        }
+
         .results-info {
             font-size: 1.1rem;
             color: #666;
@@ -214,6 +221,16 @@
             border-bottom: 1px solid #e1e8ed;
             font-size: 14px;
         }
+        
+        th:first-child, td:first-child {
+            text-align: center;
+        }
+        
+        tfoot th {
+            background: #f8f9fa;
+            color: #333;
+            font-weight: bold;
+        }
 
         tr:hover {
             background: rgba(102, 126, 234, 0.05);
@@ -256,6 +273,22 @@
             border-radius: 8px;
             margin: 20px 0;
             display: none;
+        }
+        
+        .toast-notification {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background-color: #ffc107;
+            color: #333;
+            padding: 15px 20px;
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+            z-index: 1001;
+            font-weight: 500;
+            display: none;
+            opacity: 0;
+            transition: opacity 0.5s ease-in-out;
         }
 
         .no-results {
@@ -339,6 +372,9 @@
 
             <!-- Error Message -->
             <div class="error-message" id="errorMessage"></div>
+            
+            <!-- Toast Notification -->
+            <div id="toast" class="toast-notification">กรุณาเลือกรายการที่ต้องการ</div>
 
             <!-- No Results -->
             <div class="no-results" id="noResults">
@@ -355,6 +391,7 @@
                 
                 <div class="results-header">
                     <h2 class="results-title">รายงานทรัพย์สินรายบุคคล/แผนก</h2>
+                    <p id="statusDateDisplay" class="status-date"></p>
                     <div class="results-info" id="resultsInfo"></div>
                 </div>
                 
@@ -371,6 +408,7 @@
                     <table id="resultsTable">
                         <thead>
                             <tr>
+                                <th><input type="checkbox" id="selectAllCheckbox"></th>
                                 <th>เลขทรัพย์สินหลัก</th>
                                 <th>เลขทรัพย์สินย่อย</th>
                                 <th>คำอธิบายทรัพย์สิน</th>
@@ -382,6 +420,8 @@
                         </thead>
                         <tbody id="resultsBody">
                         </tbody>
+                        <tfoot id="resultsFooter">
+                        </tfoot>
                     </table>
                 </div>
             </div>
@@ -400,30 +440,31 @@
         const SHEET_ID = '15nHQmmivX-8UaVFZ_DEsupVP1X0MEIfVWQ0oatmFjDM';
         const SHEET_NAME = 'Data';
         const DATA_RANGE = `${SHEET_NAME}!A2:Z70000`;
+        const DATE_RANGE = `${SHEET_NAME}!Q2`;
         
         // ========================================
         // Column Mapping
         // ========================================
         const COLUMNS = {
-            // FIXED: Changed Department Code to Column B (index 1)
-            DEPARTMENT_CODE: 1,    // Column B (index 1) 
-            ASSET_MAIN: 3,         // Column D (index 3)
-            ASSET_SUB: 4,          // Column E (index 4)
-            ASSET_DESCRIPTION: 5,  // Column F (index 5)
-            TRANSFER_DATE: 8,      // Column I (index 8)
-            ACQUISITION_VALUE: 9,  // Column J (index 9)
-            DEPRECIATION: 10,      // Column K (index 10)
-            BOOK_VALUE: 11,        // Column L (index 11)
-            EMPLOYEE_CODE: 12,     // Column M (index 12)
-            EMPLOYEE_NAME: 13,     // Column N (index 13)
-            POSITION: 14,          // Column O (index 14)
-            DEPARTMENT: 15         // Column P (index 15)
+            DEPARTMENT_CODE: 1,    // Column B
+            ASSET_MAIN: 3,         // Column D
+            ASSET_SUB: 4,          // Column E
+            ASSET_DESCRIPTION: 5,  // Column F
+            TRANSFER_DATE: 8,      // Column I
+            ACQUISITION_VALUE: 9,  // Column J
+            DEPRECIATION: 10,      // Column K
+            BOOK_VALUE: 11,        // Column L
+            EMPLOYEE_CODE: 12,     // Column M
+            EMPLOYEE_NAME: 13,     // Column N
+            POSITION: 14,          // Column O
+            DEPARTMENT: 15         // Column P
         };
 
         // Global variables
         let currentData = [];
         let currentSearchInfo = {};
         let allData = [];
+        let statusDate = '';
 
         // ========================================
         // Google Sheets API Functions
@@ -431,7 +472,7 @@
         
         async function loadGoogleSheetsData() {
             try {
-                const url = `https://sheets.googleapis.com/v4/spreadsheets/${SHEET_ID}/values/${DATA_RANGE}?key=${API_KEY}`;
+                const url = `https://sheets.googleapis.com/v4/spreadsheets/${SHEET_ID}/values:batchGet?ranges=${encodeURIComponent(DATA_RANGE)}&ranges=${encodeURIComponent(DATE_RANGE)}&key=${API_KEY}`;
                 const response = await fetch(url);
                 if (!response.ok) {
                     const errorData = await response.json();
@@ -439,11 +480,20 @@
                     throw new Error(`HTTP error! status: ${response.status}. Check console for details.`);
                 }
                 const data = await response.json();
-                if (!data.values || data.values.length === 0) {
+                
+                const mainData = data.valueRanges[0].values;
+                const dateData = data.valueRanges[1].values;
+
+                if (!mainData || mainData.length === 0) {
                     throw new Error('No data found in the sheet or the range is empty.');
                 }
                 
-                allData = data.values.map(row => ({
+                if (dateData && dateData[0] && dateData[0][0]) {
+                    statusDate = dateData[0][0];
+                }
+
+                allData = mainData.map((row, index) => ({
+                    id: index, // Add a unique ID for each row
                     departmentCode: row[COLUMNS.DEPARTMENT_CODE] || '',
                     assetMain: row[COLUMNS.ASSET_MAIN] || '',
                     assetSub: row[COLUMNS.ASSET_SUB] || '',
@@ -623,6 +673,9 @@
 
             const resultsInfo = document.getElementById('resultsInfo');
             const resultsBody = document.getElementById('resultsBody');
+            const statusDateDisplay = document.getElementById('statusDateDisplay');
+
+            statusDateDisplay.textContent = statusDate ? `สถานะ ณ วันที่ ${statusDate}` : '';
 
             if (searchType === 'employee') {
                 const employee = data[0];
@@ -641,6 +694,7 @@
             data.forEach(item => {
                 const row = resultsBody.insertRow();
                 row.innerHTML = `
+                    <td><input type="checkbox" class="row-checkbox" data-id="${item.id}"></td>
                     <td>${item.assetMain || '-'}</td>
                     <td>${item.assetSub || '-'}</td>
                     <td>${item.assetDescription || '-'}</td>
@@ -649,6 +703,16 @@
                     <td style="text-align: right;">${formatNumber(item.accumulatedDepreciation)}</td>
                     <td style="text-align: right;">${formatNumber(item.bookValue)}</td>
                 `;
+            });
+            
+            calculateAndDisplaySummary(data);
+
+            const selectAllCheckbox = document.getElementById('selectAllCheckbox');
+            selectAllCheckbox.checked = false; 
+            selectAllCheckbox.addEventListener('change', (event) => {
+                document.querySelectorAll('.row-checkbox').forEach(checkbox => {
+                    checkbox.checked = event.target.checked;
+                });
             });
         }
 
@@ -669,15 +733,65 @@
                 maximumFractionDigits: 2
             }).format(numValue);
         }
+        
+        function showToast(message) {
+            const toast = document.getElementById('toast');
+            toast.textContent = message;
+            toast.style.display = 'block';
+            setTimeout(() => { toast.style.opacity = 1; }, 10);
+            setTimeout(() => {
+                toast.style.opacity = 0;
+                setTimeout(() => { toast.style.display = 'none'; }, 500);
+            }, 3000);
+        }
+
+        function getSelectedData() {
+            const selectedIds = Array.from(document.querySelectorAll('.row-checkbox:checked'))
+                                     .map(cb => parseInt(cb.dataset.id));
+            return currentData.filter(item => selectedIds.includes(item.id));
+        }
+        
+        const parseCurrency = (str) => parseFloat(String(str).replace(/,/g, '')) || 0;
+
+        function calculateSummary(data) {
+            return data.reduce((summary, item) => {
+                summary.count += 1;
+                summary.totalAcquisition += parseCurrency(item.acquisitionValue);
+                summary.totalDepreciation += parseCurrency(item.accumulatedDepreciation);
+                summary.totalBookValue += parseCurrency(item.bookValue);
+                return summary;
+            }, { count: 0, totalAcquisition: 0, totalDepreciation: 0, totalBookValue: 0 });
+        }
+        
+        function calculateAndDisplaySummary(data) {
+            const summary = calculateSummary(data);
+            const footer = document.getElementById('resultsFooter');
+            footer.innerHTML = `
+                <tr>
+                    <th>รวม</th>
+                    <th colspan="4">จำนวน ${summary.count} รายการ</th>
+                    <th style="text-align: right;">${formatNumber(summary.totalAcquisition)}</th>
+                    <th style="text-align: right;">${formatNumber(summary.totalDepreciation)}</th>
+                    <th style="text-align: right;">${formatNumber(summary.totalBookValue)}</th>
+                </tr>
+            `;
+        }
 
         // ========================================
         // Export Functions
         // ========================================
 
         function printReport() {
+            const selectedData = getSelectedData();
+            if (selectedData.length === 0) {
+                showToast('กรุณาเลือกรายการที่ต้องการพิมพ์');
+                return;
+            }
+
+            const summary = calculateSummary(selectedData);
             const info = currentSearchInfo.data;
             let tableRowsHtml = '';
-            currentData.forEach(item => {
+            selectedData.forEach(item => {
                 tableRowsHtml += `
                     <tr>
                         <td>${item.assetMain || '-'}</td>
@@ -690,6 +804,15 @@
                     </tr>
                 `;
             });
+            
+            const summaryRowHtml = `
+                <tr style="font-weight: bold;">
+                    <td colspan="4">รวมทั้งสิ้น ${summary.count} รายการ</td>
+                    <td style="text-align: right;">${formatNumber(summary.totalAcquisition)}</td>
+                    <td style="text-align: right;">${formatNumber(summary.totalDepreciation)}</td>
+                    <td style="text-align: right;">${formatNumber(summary.totalBookValue)}</td>
+                </tr>
+            `;
 
             let userInfoHtml = '';
             if (currentSearchInfo.type === 'employee') {
@@ -726,6 +849,7 @@
                         }
                         h1 { font-size: 18pt; margin: 0; }
                         h2 { font-size: 16pt; margin: 0; font-weight: normal; }
+                        h3 { font-size: 14pt; margin: 5px 0 0 0; font-weight: normal; }
                         .info-section {
                             margin-bottom: 20px;
                             font-size: 12pt;
@@ -749,6 +873,10 @@
                             background-color: #f2f2f2;
                             font-weight: bold;
                         }
+                        tfoot td {
+                            background-color: #f2f2f2;
+                            font-weight: bold;
+                        }
                         @media print {
                             @page {
                                 size: A4 landscape;
@@ -764,6 +892,7 @@
                     <div class="header">
                         <h1>รายงานทรัพย์สินในครอบครอง</h1>
                         <h2>การไฟฟ้าส่วนภูมิภาค เขต(3) ภาคกลาง จังหวัดนครปฐม</h2>
+                        <h3>${statusDate ? `สถานะ ณ วันที่ ${statusDate}` : ''}</h3>
                     </div>
                     <div class="info-section">
                         ${userInfoHtml}
@@ -783,6 +912,9 @@
                         <tbody>
                             ${tableRowsHtml}
                         </tbody>
+                        <tfoot>
+                            ${summaryRowHtml}
+                        </tfoot>
                     </table>
                 </body>
                 </html>
@@ -796,18 +928,41 @@
         }
 
         function exportToExcel() {
-            const ws = XLSX.utils.json_to_sheet(currentData.map(item => ({
+            const selectedData = getSelectedData();
+            if (selectedData.length === 0) {
+                showToast('กรุณาเลือกรายการที่ต้องการ Export');
+                return;
+            }
+
+            const excelData = selectedData.map(item => ({
                 'เลขทรัพย์สินหลัก': item.assetMain || '-',
                 'เลขทรัพย์สินย่อย': item.assetSub || '-',
                 'คำอธิบายทรัพย์สิน': item.assetDescription || '-',
                 'วันที่โอนเป็นทุน': item.transferDate || '-',
-                'มูลค่าการได้มา': parseFloat(item.acquisitionValue.toString().replace(/,/g, '')) || 0,
-                'ค่าเสื่อมสะสม': parseFloat(item.accumulatedDepreciation.toString().replace(/,/g, '')) || 0,
-                'มูลค่าตามบัญชี': parseFloat(item.bookValue.toString().replace(/,/g, '')) || 0,
+                'มูลค่าการได้มา': parseCurrency(item.acquisitionValue),
+                'ค่าเสื่อมสะสม': parseCurrency(item.accumulatedDepreciation),
+                'มูลค่าตามบัญชี': parseCurrency(item.bookValue),
                 'ชื่อผู้ครอบครอง': item.employeeName || '-',
                 'ตำแหน่ง': item.position || '-',
                 'สังกัด': item.department || '-'
-            })));
+            }));
+            
+            const summary = calculateSummary(selectedData);
+            const summaryRow = {
+                'เลขทรัพย์สินหลัก': `รวมทั้งสิ้น ${summary.count} รายการ`,
+                'เลขทรัพย์สินย่อย': '',
+                'คำอธิบายทรัพย์สิน': '',
+                'วันที่โอนเป็นทุน': '',
+                'มูลค่าการได้มา': summary.totalAcquisition,
+                'ค่าเสื่อมสะสม': summary.totalDepreciation,
+                'มูลค่าตามบัญชี': summary.totalBookValue,
+                'ชื่อผู้ครอบครอง': '',
+                'ตำแหน่ง': '',
+                'สังกัด': ''
+            };
+            excelData.push(summaryRow);
+
+            const ws = XLSX.utils.json_to_sheet(excelData);
 
             ws['!cols'] = [
                 { wch: 20 }, { wch: 20 }, { wch: 50 }, { wch: 20 },
