@@ -265,7 +265,7 @@
                                 <th scope="col" class="p-4"><input type="checkbox" id="selectAllCheckbox" class="w-4 h-4 accent-indigo-300"></th>
                                 <th scope="col" class="px-6 py-3 sortable" data-sort="assetMain">รหัสทรัพย์สิน <i class="fas fa-sort sort-icon"></i></th>
                                 <th scope="col" class="px-6 py-3 sortable" data-sort="assetSub">เลขทรัพย์สินย่อย <i class="fas fa-sort sort-icon"></i></th>
-                                <th scope="col" class="px-6 py-3 sortable" data-sort="assetDescription">คำอธิบายทรัพย์สิน <i class="fas fa-sort sort-icon"></i></th>
+                                <th scope="col" class="px-6 py-3 sortable max-w-sm" data-sort="assetDescription">คำอธิบายทรัพย์สิน <i class="fas fa-sort sort-icon"></i></th>
                                 <th scope="col" class="px-6 py-3 sortable" data-sort="transferDate">วันที่โอนเป็นทุน <i class="fas fa-sort sort-icon"></i></th>
                                 <th scope="col" class="px-6 py-3 text-right sortable" data-sort="acquisitionValue">มูลค่าการได้มา <i class="fas fa-sort sort-icon"></i></th>
                                 <th scope="col" class="px-6 py-3 text-right sortable" data-sort="accumulatedDepreciation">ค่าเสื่อมสะสม <i class="fas fa-sort sort-icon"></i></th>
@@ -645,7 +645,7 @@
                     <td class="p-4"><input type="checkbox" class="row-checkbox w-4 h-4 accent-indigo-600" data-id="${item.id}"></td>
                     <td class="px-6 py-4">${item.assetMain || '-'}</td>
                     <td class="px-6 py-4">${item.assetSub || '-'}</td>
-                    <td class="px-6 py-4">${item.assetDescription || '-'}</td>
+                    <td class="px-6 py-4 max-w-sm truncate" title="${item.assetDescription || ''}">${item.assetDescription || '-'}</td>
                     <td class="px-6 py-4">${item.transferDate || '-'}</td>
                     <td class="px-6 py-4 text-right">${formatNumber(item.acquisitionValue)}</td>
                     <td class="px-6 py-4 text-right">${formatNumber(item.accumulatedDepreciation)}</td>
