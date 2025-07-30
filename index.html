@@ -124,8 +124,8 @@
             opacity: 0.5;
             margin-left: 5px;
         }
-        .sortable.asc .sort-icon.fa-sort-up,
-        .sortable.desc .sort-icon.fa-sort-down {
+        .sortable.asc .fa-sort-up,
+        .sortable.desc .fa-sort-down {
             opacity: 1;
         }
         #previewModal iframe {
@@ -152,8 +152,8 @@
     </style>
 </head>
 <body class="bg-gradient-to-r from-purple-500 to-indigo-600">
-    <div class="container mx-auto p-4">
-        <div class="text-center text-white mb-8">
+    <div class="mx-auto px-4 sm:px-6 lg:px-8 max-w-screen-2xl">
+        <div class="text-center text-white my-8">
             <h1 class="text-4xl font-semibold mb-2 text-shadow-lg">PEAC3 Asset Hub</h1>
             <p class="text-lg font-medium opacity-90">ศูนย์รวมข้อมูลทรัพย์สิน กฟก.3</p>
         </div>
@@ -163,10 +163,10 @@
             <div class="p-10 text-center" id="searchSection">
                 <h2 class="text-3xl font-semibold text-gray-700 mb-8">ค้นหาข้อมูลทรัพย์สิน</h2>
                 
-                <form class="max-w-2xl mx-auto" id="searchForm">
+                <form class="max-w-4xl mx-auto" id="searchForm">
                     <div class="mb-6">
                         <label class="block text-gray-600 font-medium mb-4">ประเภทการค้นหา:</label>
-                        <div class="flex flex-row flex-nowrap items-center justify-center gap-x-4 sm:gap-x-6">
+                        <div class="flex flex-row flex-wrap items-center justify-center gap-x-4 sm:gap-x-6">
                             <div class="flex items-center gap-2">
                                 <input type="radio" id="assetNumber" name="searchType" value="assetNumber" class="w-5 h-5 accent-indigo-600" checked>
                                 <label for="assetNumber">รหัสทรัพย์สิน</label>
@@ -263,7 +263,7 @@
                         <thead class="text-xs text-white uppercase bg-gradient-to-r from-purple-500 to-indigo-600">
                             <tr>
                                 <th scope="col" class="p-4"><input type="checkbox" id="selectAllCheckbox" class="w-4 h-4 accent-indigo-300"></th>
-                                <th scope="col" class="px-6 py-3 sortable" data-sort="assetMain">เลขทรัพย์สินหลัก <i class="fas fa-sort sort-icon"></i></th>
+                                <th scope="col" class="px-6 py-3 sortable" data-sort="assetMain">รหัสทรัพย์สิน <i class="fas fa-sort sort-icon"></i></th>
                                 <th scope="col" class="px-6 py-3 sortable" data-sort="assetSub">เลขทรัพย์สินย่อย <i class="fas fa-sort sort-icon"></i></th>
                                 <th scope="col" class="px-6 py-3 sortable" data-sort="assetDescription">คำอธิบายทรัพย์สิน <i class="fas fa-sort sort-icon"></i></th>
                                 <th scope="col" class="px-6 py-3 sortable" data-sort="transferDate">วันที่โอนเป็นทุน <i class="fas fa-sort sort-icon"></i></th>
@@ -866,8 +866,9 @@
             let tableBodyContent = '';
 
             if (searchTags.length <= 1) {
+                let tableRowsHtml = '';
                 selectedData.forEach(item => {
-                    tableBodyContent += `
+                    tableRowsHtml += `
                         <tr>
                             <td>${item.assetMain || '-'}</td>
                             <td>${item.assetSub || '-'}</td>
@@ -881,7 +882,7 @@
                     `;
                 });
                 const summary = calculateSummary(selectedData);
-                tableBodyContent += `
+                const summaryRowHtml = `
                     <tr style="font-weight: bold; background-color: #f2f2f2;">
                         <td colspan="4">รวมทั้งสิ้น ${summary.count} รายการ</td>
                         <td style="text-align: right;">${formatNumber(summary.totalAcquisition)}</td>
@@ -890,7 +891,9 @@
                         <td></td>
                     </tr>
                 `;
+                tableBodyContent = `<tbody>${tableRowsHtml}</tbody><tfoot>${summaryRowHtml}</tfoot>`;
             } else {
+                 let combinedBody = '';
                  searchTags.forEach(tag => {
                     const dataForTag = selectedData.filter(item => {
                         let valueToMatch = '';
@@ -902,10 +905,10 @@
                     });
 
                     if (dataForTag.length > 0) {
-                        tableBodyContent += `<tr><td colspan="8" style="background-color: #e0e7ff; font-weight: bold;">ผลลัพธ์สำหรับ: ${tag}</td></tr>`;
+                        combinedBody += `<tr><td colspan="8" style="background-color: #e0e7ff; font-weight: bold;">ผลลัพธ์สำหรับ: ${tag}</td></tr>`;
                         
                         dataForTag.forEach(item => {
-                             tableBodyContent += `
+                             combinedBody += `
                                 <tr>
                                     <td>${item.assetMain || '-'}</td>
                                     <td>${item.assetSub || '-'}</td>
@@ -920,7 +923,7 @@
                         });
 
                         const subSummary = calculateSummary(dataForTag);
-                        tableBodyContent += `
+                        combinedBody += `
                             <tr style="font-weight: bold; background-color: #f2f2f2;">
                                 <td colspan="4">รวมสำหรับ ${tag}: ${subSummary.count} รายการ</td>
                                 <td style="text-align: right;">${formatNumber(subSummary.totalAcquisition)}</td>
@@ -933,7 +936,7 @@
                 });
                 
                 const grandSummary = calculateSummary(selectedData);
-                tableBodyContent += `
+                const grandSummaryRow = `
                     <tr style="font-weight: bold; background-color: #d1d5db;">
                         <td colspan="4">รวมทั้งหมดทุกรายการ: ${grandSummary.count} รายการ</td>
                         <td style="text-align: right;">${formatNumber(grandSummary.totalAcquisition)}</td>
@@ -942,6 +945,7 @@
                         <td></td>
                     </tr>
                 `;
+                tableBodyContent = `<tbody>${combinedBody}</tbody><tfoot>${grandSummaryRow}</tfoot>`;
             }
 
             let userInfoHtml = `<div><strong>ผลการค้นหาสำหรับ:</strong> ${currentSearchInfo.value}</div>`;
@@ -1009,6 +1013,9 @@
                             background-color: #f2f2f2;
                             font-weight: bold;
                         }
+                        tfoot {
+                            display: table-footer-group;
+                        }
                         .report-footer {
                             margin-top: 40px;
                             display: flex;
@@ -1067,9 +1074,7 @@
                                 <th>ศูนย์ต้นทุน ท/ส</th>
                             </tr>
                         </thead>
-                        <tbody>
-                            ${tableBodyContent}
-                        </tbody>
+                        ${tableBodyContent}
                     </table>
                     ${reportFooterHtml}
                 </body>
