@@ -587,7 +587,18 @@
 
             statusDateDisplay.textContent = statusDate ? `สิ้นสุด ณ งวดบัญชี ${statusDate}` : '';
 
-            resultsInfo.innerHTML = `<strong>ผลการค้นหาสำหรับ:</strong> ${currentSearchInfo.value}`;
+            if (searchType === 'employee' && searchTags.length === 1) {
+                const employee = data[0];
+                resultsInfo.innerHTML = `
+                    <div class="flex flex-wrap justify-center items-center gap-x-6 gap-y-2">
+                        <div><strong>ชื่อ-สกุล:</strong> ${employee.assetSupervisorName || '-'}</div>
+                        <div><strong>ตำแหน่ง:</strong> ${employee.position || '-'}</div>
+                        <div><strong>สังกัด:</strong> ${employee.department || '-'}</div>
+                    </div>
+                `;
+            } else {
+                resultsInfo.innerHTML = `<strong>ผลการค้นหาสำหรับ:</strong> ${currentSearchInfo.value}`;
+            }
             
             renderTable(data);
 
@@ -866,9 +877,8 @@
             let tableBodyContent = '';
 
             if (searchTags.length <= 1) {
-                let tableRowsHtml = '';
                 selectedData.forEach(item => {
-                    tableRowsHtml += `
+                    tableBodyContent += `
                         <tr>
                             <td>${item.assetMain || '-'}</td>
                             <td>${item.assetSub || '-'}</td>
@@ -882,7 +892,7 @@
                     `;
                 });
                 const summary = calculateSummary(selectedData);
-                const summaryRowHtml = `
+                tableBodyContent += `
                     <tr style="font-weight: bold; background-color: #f2f2f2;">
                         <td colspan="4">รวมทั้งสิ้น ${summary.count} รายการ</td>
                         <td style="text-align: right;">${formatNumber(summary.totalAcquisition)}</td>
@@ -891,9 +901,7 @@
                         <td></td>
                     </tr>
                 `;
-                tableBodyContent = `<tbody>${tableRowsHtml}</tbody><tfoot>${summaryRowHtml}</tfoot>`;
             } else {
-                 let combinedBody = '';
                  searchTags.forEach(tag => {
                     const dataForTag = selectedData.filter(item => {
                         let valueToMatch = '';
@@ -905,10 +913,10 @@
                     });
 
                     if (dataForTag.length > 0) {
-                        combinedBody += `<tr><td colspan="8" style="background-color: #e0e7ff; font-weight: bold;">ผลลัพธ์สำหรับ: ${tag}</td></tr>`;
+                        tableBodyContent += `<tr><td colspan="8" style="background-color: #e0e7ff; font-weight: bold;">ผลลัพธ์สำหรับ: ${tag}</td></tr>`;
                         
                         dataForTag.forEach(item => {
-                             combinedBody += `
+                             tableBodyContent += `
                                 <tr>
                                     <td>${item.assetMain || '-'}</td>
                                     <td>${item.assetSub || '-'}</td>
@@ -923,7 +931,7 @@
                         });
 
                         const subSummary = calculateSummary(dataForTag);
-                        combinedBody += `
+                        tableBodyContent += `
                             <tr style="font-weight: bold; background-color: #f2f2f2;">
                                 <td colspan="4">รวมสำหรับ ${tag}: ${subSummary.count} รายการ</td>
                                 <td style="text-align: right;">${formatNumber(subSummary.totalAcquisition)}</td>
@@ -936,7 +944,7 @@
                 });
                 
                 const grandSummary = calculateSummary(selectedData);
-                const grandSummaryRow = `
+                tableBodyContent += `
                     <tr style="font-weight: bold; background-color: #d1d5db;">
                         <td colspan="4">รวมทั้งหมดทุกรายการ: ${grandSummary.count} รายการ</td>
                         <td style="text-align: right;">${formatNumber(grandSummary.totalAcquisition)}</td>
@@ -945,10 +953,21 @@
                         <td></td>
                     </tr>
                 `;
-                tableBodyContent = `<tbody>${combinedBody}</tbody><tfoot>${grandSummaryRow}</tfoot>`;
             }
 
-            let userInfoHtml = `<div><strong>ผลการค้นหาสำหรับ:</strong> ${currentSearchInfo.value}</div>`;
+            let userInfoHtml = '';
+            if (currentSearchInfo.type === 'employee' && searchTags.length === 1) {
+                const employee = currentData[0];
+                userInfoHtml = `
+                    <div class="info-grid">
+                        <div><strong>ชื่อ-สกุล:</strong> ${employee.assetSupervisorName || '-'}</div>
+                        <div><strong>ตำแหน่ง:</strong> ${employee.position || '-'}</div>
+                        <div><strong>สังกัด:</strong> ${employee.department || '-'}</div>
+                    </div>
+                `;
+            } else {
+                userInfoHtml = `<div><strong>ผลการค้นหาสำหรับ:</strong> ${currentSearchInfo.value}</div>`;
+            }
             
             const printDate = new Date().toLocaleDateString('th-TH', {
                 day: 'numeric',
@@ -999,6 +1018,11 @@
                             margin-bottom: 20px;
                             font-size: 12pt;
                         }
+                        .info-grid {
+                            display: grid;
+                            grid-template-columns: repeat(3, 1fr);
+                            gap: 10px;
+                        }
                         table {
                             width: 100%;
                             border-collapse: collapse;
@@ -1012,9 +1036,6 @@
                         th {
                             background-color: #f2f2f2;
                             font-weight: bold;
-                        }
-                        tfoot {
-                            display: table-footer-group;
                         }
                         .report-footer {
                             margin-top: 40px;
@@ -1074,7 +1095,9 @@
                                 <th>ศูนย์ต้นทุน ท/ส</th>
                             </tr>
                         </thead>
-                        ${tableBodyContent}
+                        <tbody>
+                            ${tableBodyContent}
+                        </tbody>
                     </table>
                     ${reportFooterHtml}
                 </body>
