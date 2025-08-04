@@ -10,15 +10,6 @@
         body {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
         }
-        .btn-gemini {
-            background: linear-gradient(135deg, #89f7fe 0%, #66a6ff 100%);
-            color: #1e3a8a;
-            border-color: #66a6ff;
-        }
-        .btn-gemini:hover {
-            background: linear-gradient(135deg, #66a6ff 0%, #89f7fe 100%);
-            color: #1e3a8a;
-        }
         .modal-overlay {
             position: fixed;
             top: 0;
@@ -40,12 +31,13 @@
         }
         .modal-content {
             background: white;
-            padding: 2rem;
+            padding: 0;
             border-radius: 1rem;
-            max-width: 600px;
-            width: 90%;
-            max-height: 80vh;
-            overflow-y: auto;
+            width: 95vw;
+            height: 90vh;
+            max-width: none;
+            max-height: none;
+            overflow: hidden;
             position: relative;
             transform: scale(0.9);
             transition: transform 0.3s ease;
@@ -53,24 +45,21 @@
         .modal-overlay.visible .modal-content {
             transform: scale(1);
         }
+         .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background-color: #f3f4f6;
+            padding: 0.75rem 1.5rem;
+            border-bottom: 1px solid #e5e7eb;
+         }
         .modal-close {
-            position: absolute;
-            top: 1rem;
-            right: 1rem;
             cursor: pointer;
         }
-        .gemini-spinner {
-            border: 4px solid #f3f3f3;
-            border-top: 4px solid #66a6ff;
-            border-radius: 50%;
-            width: 40px;
-            height: 40px;
-            animation: spin 1s linear infinite;
-            margin: 2rem auto;
-        }
-        @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
+        #previewModal iframe {
+            width: 100%;
+            height: calc(100% - 57px); /* Adjust based on header height */
+            border: none;
         }
         .tag-container {
             display: flex;
@@ -128,27 +117,6 @@
         .sortable.desc .fa-sort-down {
             opacity: 1;
         }
-        #previewModal iframe {
-            width: 100%;
-            height: 100%;
-            border: none;
-        }
-        #previewModal .modal-content {
-             width: 95vw;
-             height: 90vh;
-             max-width: none;
-             max-height: none;
-             padding: 0;
-             overflow: hidden;
-        }
-         #previewModal .modal-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            background-color: #f3f4f6;
-            padding: 0.75rem 1.5rem;
-            border-bottom: 1px solid #e5e7eb;
-         }
     </style>
 </head>
 <body class="bg-gradient-to-r from-purple-500 to-indigo-600">
@@ -245,9 +213,6 @@
                     <button class="btn-export bg-white text-green-600 border-2 border-green-600 font-bold py-2 px-5 rounded-full hover:bg-green-600 hover:text-white transition-colors" onclick="exportToExcel()">
                         <i class="fas fa-file-excel mr-2"></i> Export to Excel
                     </button>
-                    <button class="btn-export btn-gemini font-bold py-2 px-5 rounded-full" onclick="getAssetSummary()">
-                        <span class="mr-2">✨</span> สรุปข้อมูลทรัพย์สิน (AI)
-                    </button>
                 </div>
                 
                 <div class="mb-4 relative">
@@ -288,20 +253,6 @@
         </footer>
     </div>
     
-    <!-- Gemini Summary Modal -->
-    <div id="geminiModal" class="modal-overlay">
-        <div class="modal-content">
-            <button id="closeGeminiModal" class="modal-close text-gray-500 hover:text-gray-800">
-                <i class="fas fa-times fa-lg"></i>
-            </button>
-            <h2 class="text-2xl font-bold text-gray-800 mb-4 flex items-center">
-                <span class="mr-2">✨</span> บทสรุปจาก AI
-            </h2>
-            <div id="geminiSpinner" class="gemini-spinner"></div>
-            <div id="geminiResult" class="text-gray-700 leading-relaxed whitespace-pre-wrap"></div>
-        </div>
-    </div>
-
     <!-- Preview Modal -->
     <div id="previewModal" class="modal-overlay">
         <div class="modal-content">
@@ -588,7 +539,7 @@
             statusDateDisplay.textContent = statusDate ? `สิ้นสุด ณ งวดบัญชี ${statusDate}` : '';
 
             if (searchType === 'employee' && searchTags.length === 1) {
-                const employee = data[0];
+                const employee = data.length > 0 ? data[0] : {};
                 resultsInfo.innerHTML = `
                     <div class="flex flex-wrap justify-center items-center gap-x-6 gap-y-2">
                         <div><strong>ชื่อ-สกุล:</strong> ${employee.assetSupervisorName || '-'}</div>
@@ -863,7 +814,7 @@
         }
 
         // ========================================
-        // Export & Gemini Functions
+        // Export & Report Functions
         // ========================================
         
         function generateReportHTML() {
@@ -875,84 +826,73 @@
 
             const searchType = document.querySelector('input[name="searchType"]:checked').value;
             let tableBodyContent = '';
+            
+            const generateRows = (data) => data.map(item => `
+                <tr>
+                    <td>${item.assetMain || '-'}</td>
+                    <td>${item.assetSub || '-'}</td>
+                    <td>${item.assetDescription || '-'}</td>
+                    <td>${item.transferDate || '-'}</td>
+                    <td style="text-align: right;">${formatNumber(item.acquisitionValue)}</td>
+                    <td style="text-align: right;">${formatNumber(item.accumulatedDepreciation)}</td>
+                    <td style="text-align: right;">${formatNumber(item.bookValue)}</td>
+                    <td>${item.assetCostCenter || '-'}</td>
+                </tr>
+            `).join('');
 
-            if (searchTags.length <= 1) {
-                selectedData.forEach(item => {
-                    tableBodyContent += `
-                        <tr>
-                            <td>${item.assetMain || '-'}</td>
-                            <td>${item.assetSub || '-'}</td>
-                            <td>${item.assetDescription || '-'}</td>
-                            <td>${item.transferDate || '-'}</td>
-                            <td style="text-align: right;">${formatNumber(item.acquisitionValue)}</td>
-                            <td style="text-align: right;">${formatNumber(item.accumulatedDepreciation)}</td>
-                            <td style="text-align: right;">${formatNumber(item.bookValue)}</td>
-                            <td>${item.assetCostCenter || '-'}</td>
-                        </tr>
-                    `;
+            const generateSummaryRow = (summary, label, style = 'background-color: #f2f2f2;') => `
+                <tr style="font-weight: bold; ${style}">
+                    <td colspan="4">${label}: ${summary.count} รายการ</td>
+                    <td style="text-align: right;">${formatNumber(summary.totalAcquisition)}</td>
+                    <td style="text-align: right;">${formatNumber(summary.totalDepreciation)}</td>
+                    <td style="text-align: right;">${formatNumber(summary.totalBookValue)}</td>
+                    <td></td>
+                </tr>
+            `;
+
+            if (searchType === 'businessType') {
+                const groupedByCostCenter = selectedData.reduce((acc, item) => {
+                    const key = item.assetCostCenter || 'ไม่ระบุศูนย์ต้นทุน';
+                    if (!acc[key]) acc[key] = [];
+                    acc[key].push(item);
+                    return acc;
+                }, {});
+
+                Object.keys(groupedByCostCenter).sort().forEach(costCenter => {
+                    const dataForGroup = groupedByCostCenter[costCenter];
+                    tableBodyContent += `<tr><td colspan="8" style="background-color: #e0e7ff; font-weight: bold;">ศูนย์ต้นทุน ท/ส: ${costCenter}</td></tr>`;
+                    tableBodyContent += generateRows(dataForGroup);
+                    const subSummary = calculateSummary(dataForGroup);
+                    tableBodyContent += generateSummaryRow(subSummary, `รวมสำหรับ ${costCenter}`);
                 });
-                const summary = calculateSummary(selectedData);
-                tableBodyContent += `
-                    <tr style="font-weight: bold; background-color: #f2f2f2;">
-                        <td colspan="4">รวมทั้งสิ้น ${summary.count} รายการ</td>
-                        <td style="text-align: right;">${formatNumber(summary.totalAcquisition)}</td>
-                        <td style="text-align: right;">${formatNumber(summary.totalDepreciation)}</td>
-                        <td style="text-align: right;">${formatNumber(summary.totalBookValue)}</td>
-                        <td></td>
-                    </tr>
-                `;
-            } else {
+
+                const grandSummary = calculateSummary(selectedData);
+                tableBodyContent += generateSummaryRow(grandSummary, 'รวมทั้งหมดทุกรายการ', 'background-color: #d1d5db;');
+
+            } else if (searchTags.length > 1) {
                  searchTags.forEach(tag => {
                     const dataForTag = selectedData.filter(item => {
                         let valueToMatch = '';
                         if (searchType === 'employee') valueToMatch = item.employeeCode;
                         else if (searchType === 'costCenterName') valueToMatch = item.assetCostCenter;
-                        else if (searchType === 'businessType') valueToMatch = item.businessType;
                         else if (searchType === 'assetNumber') valueToMatch = item.assetMain;
                         return valueToMatch.toString().trim().toLowerCase() === tag.toLowerCase();
                     });
 
                     if (dataForTag.length > 0) {
                         tableBodyContent += `<tr><td colspan="8" style="background-color: #e0e7ff; font-weight: bold;">ผลลัพธ์สำหรับ: ${tag}</td></tr>`;
-                        
-                        dataForTag.forEach(item => {
-                             tableBodyContent += `
-                                <tr>
-                                    <td>${item.assetMain || '-'}</td>
-                                    <td>${item.assetSub || '-'}</td>
-                                    <td>${item.assetDescription || '-'}</td>
-                                    <td>${item.transferDate || '-'}</td>
-                                    <td style="text-align: right;">${formatNumber(item.acquisitionValue)}</td>
-                                    <td style="text-align: right;">${formatNumber(item.accumulatedDepreciation)}</td>
-                                    <td style="text-align: right;">${formatNumber(item.bookValue)}</td>
-                                    <td>${item.assetCostCenter || '-'}</td>
-                                </tr>
-                            `;
-                        });
-
+                        tableBodyContent += generateRows(dataForTag);
                         const subSummary = calculateSummary(dataForTag);
-                        tableBodyContent += `
-                            <tr style="font-weight: bold; background-color: #f2f2f2;">
-                                <td colspan="4">รวมสำหรับ ${tag}: ${subSummary.count} รายการ</td>
-                                <td style="text-align: right;">${formatNumber(subSummary.totalAcquisition)}</td>
-                                <td style="text-align: right;">${formatNumber(subSummary.totalDepreciation)}</td>
-                                <td style="text-align: right;">${formatNumber(subSummary.totalBookValue)}</td>
-                                <td></td>
-                            </tr>
-                        `;
+                        tableBodyContent += generateSummaryRow(subSummary, `รวมสำหรับ ${tag}`);
                     }
                 });
                 
                 const grandSummary = calculateSummary(selectedData);
-                tableBodyContent += `
-                    <tr style="font-weight: bold; background-color: #d1d5db;">
-                        <td colspan="4">รวมทั้งหมดทุกรายการ: ${grandSummary.count} รายการ</td>
-                        <td style="text-align: right;">${formatNumber(grandSummary.totalAcquisition)}</td>
-                        <td style="text-align: right;">${formatNumber(grandSummary.totalDepreciation)}</td>
-                        <td style="text-align: right;">${formatNumber(grandSummary.totalBookValue)}</td>
-                        <td></td>
-                    </tr>
-                `;
+                tableBodyContent += generateSummaryRow(grandSummary, 'รวมทั้งหมดทุกรายการ', 'background-color: #d1d5db;');
+            } else {
+                tableBodyContent += generateRows(selectedData);
+                const summary = calculateSummary(selectedData);
+                tableBodyContent += generateSummaryRow(summary, 'รวมทั้งสิ้น');
             }
 
             let userInfoHtml = '';
@@ -1132,6 +1072,54 @@
             }
         }
 
+        async function exportToPDF() {
+            const reportHtml = generateReportHTML();
+            if (!reportHtml) return;
+
+            showToast('กำลังสร้างไฟล์ PDF...');
+
+            const printContainer = document.createElement('div');
+            printContainer.innerHTML = reportHtml;
+            printContainer.style.position = 'absolute';
+            printContainer.style.left = '-9999px';
+            printContainer.style.width = '1122px'; // A4 landscape width in px for rendering
+            document.body.appendChild(printContainer);
+
+            const canvas = await html2canvas(printContainer.querySelector('body'), {
+                scale: 2,
+                useCORS: true
+            });
+
+            document.body.removeChild(printContainer);
+
+            const imgData = canvas.toDataURL('image/png');
+            const { jsPDF } = window.jspdf;
+            const pdf = new jsPDF('l', 'mm', 'a4');
+            const pdfWidth = pdf.internal.pageSize.getWidth();
+            const pdfHeight = pdf.internal.pageSize.getHeight();
+            const imgWidth = canvas.width;
+            const imgHeight = canvas.height;
+            const ratio = imgWidth / imgHeight;
+            const canvasWidth = pdfWidth;
+            const canvasHeight = canvasWidth / ratio;
+
+            let heightLeft = canvasHeight;
+            let position = 0;
+
+            pdf.addImage(imgData, 'PNG', 0, position, canvasWidth, canvasHeight);
+            heightLeft -= pdfHeight;
+
+            while (heightLeft > 0) {
+                position = heightLeft - canvasHeight;
+                pdf.addPage();
+                pdf.addImage(imgData, 'PNG', 0, position, canvasWidth, canvasHeight);
+                heightLeft -= pdfHeight;
+            }
+            
+            const fileName = `Report Asset - ${searchTags.join(',')}.pdf`;
+            pdf.save(fileName);
+        }
+
         function exportToExcel() {
             const selectedData = getSelectedData();
             if (selectedData.length === 0) {
@@ -1182,81 +1170,6 @@
             const wb = XLSX.utils.book_new();
             XLSX.utils.book_append_sheet(wb, ws, 'Asset Report');
             XLSX.writeFile(wb, 'asset-report.xlsx');
-        }
-
-        // ========================================
-        // Gemini AI Function
-        // ========================================
-        const geminiModal = document.getElementById('geminiModal');
-        const closeGeminiModal = document.getElementById('closeGeminiModal');
-        const geminiSpinner = document.getElementById('geminiSpinner');
-        const geminiResult = document.getElementById('geminiResult');
-        
-        closeGeminiModal.addEventListener('click', () => geminiModal.classList.remove('visible'));
-        geminiModal.addEventListener('click', (e) => {
-            if (e.target === geminiModal) {
-                geminiModal.classList.remove('visible');
-            }
-        });
-
-        async function getAssetSummary() {
-            const selectedData = getSelectedData();
-            if (selectedData.length === 0) {
-                showToast('กรุณาเลือกรายการที่ต้องการสรุปข้อมูล');
-                return;
-            }
-
-            geminiResult.innerHTML = '';
-            geminiSpinner.style.display = 'block';
-            geminiModal.classList.add('visible');
-
-            const info = currentSearchInfo.data;
-            const context = `สำหรับเงื่อนไข: ${currentSearchInfo.value}`;
-
-            let assetList = selectedData.map(item => 
-                `- ${item.assetDescription} (มูลค่าตามบัญชี: ${formatNumber(item.bookValue)} บาท, ได้มาเมื่อ: ${item.transferDate})`
-            ).join('\n');
-
-            const prompt = `ในฐานะผู้ช่วยวิเคราะห์ทรัพย์สิน กรุณาสรุปภาพรวมของรายการทรัพย์สินต่อไปนี้ ${context} เป็นภาษาไทยที่กระชับและเข้าใจง่าย:
-                \n${assetList}\n
-                ให้วิเคราะห์ในประเด็นต่อไปนี้:
-                1. ภาพรวมทั่วไปของทรัพย์สิน (เช่น ส่วนใหญ่เป็นอุปกรณ์คอมพิวเตอร์, เฟอร์นิเจอร์สำนักงาน)
-                2. รายการที่มีมูลค่าตามบัญชีสูงสุด 1-2 รายการ
-                3. รายการที่เก่าแก่ที่สุด 1-2 รายการ
-                4. ข้อสังเกตอื่นๆ ที่น่าสนใจ (ถ้ามี)`;
-            
-            try {
-                let chatHistory = [{ role: "user", parts: [{ text: prompt }] }];
-                const payload = { contents: chatHistory };
-                const GEMINI_API_KEY = "";
-                const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-05-20:generateContent?key=${GEMINI_API_KEY}`;
-                
-                const response = await fetch(apiUrl, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(payload)
-                });
-
-                if (!response.ok) {
-                    throw new Error(`API call failed with status: ${response.status}`);
-                }
-
-                const result = await response.json();
-                
-                if (result.candidates && result.candidates.length > 0 &&
-                    result.candidates[0].content && result.candidates[0].content.parts &&
-                    result.candidates[0].content.parts.length > 0) {
-                    const text = result.candidates[0].content.parts[0].text;
-                    geminiResult.innerText = text;
-                } else {
-                    geminiResult.innerText = "ขออภัย, ไม่สามารถสร้างบทสรุปได้ในขณะนี้";
-                }
-            } catch (error) {
-                console.error("Gemini API Error:", error);
-                geminiResult.innerText = "เกิดข้อผิดพลาดในการเชื่อมต่อกับ AI กรุณาลองใหม่อีกครั้ง";
-            } finally {
-                geminiSpinner.style.display = 'none';
-            }
         }
     </script>
 </body>
