@@ -921,18 +921,6 @@
                         <div>ข้อมูลจากรายงาน S_ALR_87011963</div>
                         <div>พิมพ์รายงาน ณ วันที่ ${printDate}</div>
                     </div>
-                    <div class="signature-section">
-                        <div class="signature-box">
-                            <div>หน่วยงานในเขต กฟก.3</div>
-                            <div class="signature-line">..................................</div>
-                            <div>หผ.บส.กบฟ.(ก3)</div>
-                        </div>
-                        <div class="signature-box">
-                            <div>กฟฟ.ในสังกัด กฟก.3</div>
-                            <div class="signature-line">..................................</div>
-                            <div>หผ.สน.</div>
-                        </div>
-                    </div>
                 </div>
             `;
 
@@ -988,19 +976,6 @@
                         .report-source {
                             font-size: 9pt;
                             color: #555;
-                        }
-                        .signature-section {
-                            display: flex;
-                            justify-content: flex-end;
-                        }
-                        .signature-box {
-                            text-align: center;
-                            width: 250px;
-                            margin-left: 50px;
-                        }
-                        .signature-line {
-                            margin-top: 40px;
-                            margin-bottom: 5px;
                         }
                         @media print {
                             @page {
@@ -1072,52 +1047,19 @@
             }
         }
 
-        async function exportToPDF() {
-            const reportHtml = generateReportHTML();
-            if (!reportHtml) return;
+        function exportToPDF() {
+             const reportHtml = generateReportHTML();
+             if(!reportHtml) return;
 
-            showToast('กำลังสร้างไฟล์ PDF...');
-
-            const printContainer = document.createElement('div');
-            printContainer.innerHTML = reportHtml;
-            printContainer.style.position = 'absolute';
-            printContainer.style.left = '-9999px';
-            printContainer.style.width = '1122px'; // A4 landscape width in px for rendering
-            document.body.appendChild(printContainer);
-
-            const canvas = await html2canvas(printContainer.querySelector('body'), {
-                scale: 2,
-                useCORS: true
-            });
-
-            document.body.removeChild(printContainer);
-
-            const imgData = canvas.toDataURL('image/png');
-            const { jsPDF } = window.jspdf;
-            const pdf = new jsPDF('l', 'mm', 'a4');
-            const pdfWidth = pdf.internal.pageSize.getWidth();
-            const pdfHeight = pdf.internal.pageSize.getHeight();
-            const imgWidth = canvas.width;
-            const imgHeight = canvas.height;
-            const ratio = imgWidth / imgHeight;
-            const canvasWidth = pdfWidth;
-            const canvasHeight = canvasWidth / ratio;
-
-            let heightLeft = canvasHeight;
-            let position = 0;
-
-            pdf.addImage(imgData, 'PNG', 0, position, canvasWidth, canvasHeight);
-            heightLeft -= pdfHeight;
-
-            while (heightLeft > 0) {
-                position = heightLeft - canvasHeight;
-                pdf.addPage();
-                pdf.addImage(imgData, 'PNG', 0, position, canvasWidth, canvasHeight);
-                heightLeft -= pdfHeight;
-            }
-            
-            const fileName = `Report Asset - ${searchTags.join(',')}.pdf`;
-            pdf.save(fileName);
+             const printWindow = window.open('', '_blank');
+             printWindow.document.write(reportHtml);
+             printWindow.document.close();
+             
+             setTimeout(() => {
+                printWindow.focus();
+                printWindow.print();
+                printWindow.close();
+             }, 250);
         }
 
         function exportToExcel() {
