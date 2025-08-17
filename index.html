@@ -277,7 +277,7 @@
         const API_KEY = 'AIzaSyA5c8JZsxEC7JgLspIjuCU-CCsIAa7TtWg';
         const SHEET_ID = '15nHQmmivX-8UaVFZ_DEsupVP1X0MEIfVWQ0oatmFjDM';
         const SHEET_NAME = 'Data';
-        const DATA_RANGE = `${SHEET_NAME}!A2:Z70000`;
+        const DATA_RANGE = `${SHEET_NAME}!A2:Z100000`;
         const DATE_RANGE = `${SHEET_NAME}!Q2`;
         
         // ========================================
@@ -377,20 +377,25 @@
         
         function searchByMultipleCriteria(tags, type) {
             if (tags.length === 0) return [];
-            const lowerCaseTags = tags.map(tag => tag.toLowerCase());
-
+            
             return allData.filter(item => {
-                let valueToMatch = '';
-                if (type === 'employee') {
-                    valueToMatch = item.employeeCode.toString().trim().toLowerCase();
-                } else if (type === 'costCenterName') {
-                    valueToMatch = item.assetCostCenter.toString().trim().toLowerCase();
-                } else if (type === 'businessType') {
-                    valueToMatch = item.businessType.toString().trim().toLowerCase();
-                } else { // assetNumber
-                    valueToMatch = item.assetMain.toString().trim().toLowerCase();
-                }
-                return lowerCaseTags.includes(valueToMatch);
+                return tags.some(tag => {
+                    const lowerCaseTag = tag.toLowerCase();
+                    if (type === 'assetNumber' && lowerCaseTag.includes('-')) {
+                        const [startStr, endStr] = lowerCaseTag.split('-');
+                        const start = parseInt(startStr.trim(), 10);
+                        const end = parseInt(endStr.trim(), 10);
+                        const assetValue = parseInt(item.assetMain.trim(), 10);
+                        return !isNaN(start) && !isNaN(end) && !isNaN(assetValue) && assetValue >= start && assetValue <= end;
+                    } else {
+                        let valueToMatch = '';
+                        if (type === 'employee') valueToMatch = item.employeeCode.toString().trim().toLowerCase();
+                        else if (type === 'costCenterName') valueToMatch = item.assetCostCenter.toString().trim().toLowerCase();
+                        else if (type === 'businessType') valueToMatch = item.businessType.toString().trim().toLowerCase();
+                        else if (type === 'assetNumber') valueToMatch = item.assetMain.toString().trim().toLowerCase();
+                        return valueToMatch === lowerCaseTag;
+                    }
+                });
             });
         }
 
@@ -416,7 +421,7 @@
                     searchInput.placeholder = 'กรอกประเภทธุรกิจแล้วกด Enter';
                 } else { // assetNumber
                     searchLabel.textContent = 'รหัสทรัพย์สิน:';
-                    searchInput.placeholder = 'กรอกรหัสทรัพย์สินแล้วกด Enter';
+                    searchInput.placeholder = 'กรอกรหัสทรัพย์สิน หรือช่วง (เช่น 100-105) แล้วกด Enter';
                 }
             });
         });
@@ -566,6 +571,9 @@
             multifunctionSearchInput.addEventListener('input', () => {
                 const searchTerm = multifunctionSearchInput.value.toLowerCase().trim();
                 const filteredDisplayData = currentData.filter(item => {
+                    if (searchTerm === '1.00') {
+                        return formatNumber(item.bookValue) === '1.00';
+                    }
                     return (
                         String(item.assetMain).toLowerCase().includes(searchTerm) ||
                         String(item.assetSub).toLowerCase().includes(searchTerm) ||
@@ -850,45 +858,28 @@
                 </tr>
             `;
 
-            if (searchType === 'businessType') {
-                const groupedByCostCenter = selectedData.reduce((acc, item) => {
-                    const key = item.assetCostCenter || 'ไม่ระบุศูนย์ต้นทุน';
+            if (searchType === 'businessType' || searchTags.length > 1) {
+                const groupKey = searchType === 'businessType' ? 'assetCostCenter' : searchType === 'employee' ? 'employeeCode' : searchType === 'costCenterName' ? 'assetCostCenter' : 'assetMain';
+                const groupLabelPrefix = searchType === 'businessType' ? 'ศูนย์ต้นทุน ท/ส' : 'ผลลัพธ์สำหรับ';
+
+                const groupedData = selectedData.reduce((acc, item) => {
+                    const key = item[groupKey] || 'ไม่ระบุ';
                     if (!acc[key]) acc[key] = [];
                     acc[key].push(item);
                     return acc;
                 }, {});
 
-                Object.keys(groupedByCostCenter).sort().forEach(costCenter => {
-                    const dataForGroup = groupedByCostCenter[costCenter];
-                    tableBodyContent += `<tr><td colspan="8" style="background-color: #e0e7ff; font-weight: bold;">ศูนย์ต้นทุน ท/ส: ${costCenter}</td></tr>`;
+                Object.keys(groupedData).sort().forEach(key => {
+                    const dataForGroup = groupedData[key];
+                    tableBodyContent += `<tr><td colspan="8" style="background-color: #e0e7ff; font-weight: bold;">${groupLabelPrefix}: ${key}</td></tr>`;
                     tableBodyContent += generateRows(dataForGroup);
                     const subSummary = calculateSummary(dataForGroup);
-                    tableBodyContent += generateSummaryRow(subSummary, `รวมสำหรับ ${costCenter}`);
+                    tableBodyContent += generateSummaryRow(subSummary, `รวมสำหรับ ${key}`);
                 });
 
                 const grandSummary = calculateSummary(selectedData);
                 tableBodyContent += generateSummaryRow(grandSummary, 'รวมทั้งหมดทุกรายการ', 'background-color: #d1d5db;');
 
-            } else if (searchTags.length > 1) {
-                 searchTags.forEach(tag => {
-                    const dataForTag = selectedData.filter(item => {
-                        let valueToMatch = '';
-                        if (searchType === 'employee') valueToMatch = item.employeeCode;
-                        else if (searchType === 'costCenterName') valueToMatch = item.assetCostCenter;
-                        else if (searchType === 'assetNumber') valueToMatch = item.assetMain;
-                        return valueToMatch.toString().trim().toLowerCase() === tag.toLowerCase();
-                    });
-
-                    if (dataForTag.length > 0) {
-                        tableBodyContent += `<tr><td colspan="8" style="background-color: #e0e7ff; font-weight: bold;">ผลลัพธ์สำหรับ: ${tag}</td></tr>`;
-                        tableBodyContent += generateRows(dataForTag);
-                        const subSummary = calculateSummary(dataForTag);
-                        tableBodyContent += generateSummaryRow(subSummary, `รวมสำหรับ ${tag}`);
-                    }
-                });
-                
-                const grandSummary = calculateSummary(selectedData);
-                tableBodyContent += generateSummaryRow(grandSummary, 'รวมทั้งหมดทุกรายการ', 'background-color: #d1d5db;');
             } else {
                 tableBodyContent += generateRows(selectedData);
                 const summary = calculateSummary(selectedData);
@@ -1047,19 +1038,52 @@
             }
         }
 
-        function exportToPDF() {
-             const reportHtml = generateReportHTML();
-             if(!reportHtml) return;
+        async function exportToPDF() {
+            const reportHtml = generateReportHTML();
+            if (!reportHtml) return;
 
-             const printWindow = window.open('', '_blank');
-             printWindow.document.write(reportHtml);
-             printWindow.document.close();
-             
-             setTimeout(() => {
-                printWindow.focus();
-                printWindow.print();
-                printWindow.close();
-             }, 250);
+            showToast('กำลังสร้างไฟล์ PDF...');
+
+            const printContainer = document.createElement('div');
+            printContainer.innerHTML = reportHtml;
+            printContainer.style.position = 'absolute';
+            printContainer.style.left = '-9999px';
+            printContainer.style.width = '1122px'; // A4 landscape width in px for rendering
+            document.body.appendChild(printContainer);
+
+            const canvas = await html2canvas(printContainer.querySelector('body'), {
+                scale: 2,
+                useCORS: true
+            });
+
+            document.body.removeChild(printContainer);
+
+            const imgData = canvas.toDataURL('image/png');
+            const { jsPDF } = window.jspdf;
+            const pdf = new jsPDF('l', 'mm', 'a4');
+            const pdfWidth = pdf.internal.pageSize.getWidth();
+            const pdfHeight = pdf.internal.pageSize.getHeight();
+            const imgWidth = canvas.width;
+            const imgHeight = canvas.height;
+            const ratio = imgWidth / imgHeight;
+            const canvasWidth = pdfWidth;
+            const canvasHeight = canvasWidth / ratio;
+
+            let heightLeft = canvasHeight;
+            let position = 0;
+
+            pdf.addImage(imgData, 'PNG', 0, position, canvasWidth, canvasHeight);
+            heightLeft -= pdfHeight;
+
+            while (heightLeft > 0) {
+                position = heightLeft - canvasHeight;
+                pdf.addPage();
+                pdf.addImage(imgData, 'PNG', 0, position, canvasWidth, canvasHeight);
+                heightLeft -= pdfHeight;
+            }
+            
+            const fileName = `Report Asset - ${searchTags.join(',')}.pdf`;
+            pdf.save(fileName);
         }
 
         function exportToExcel() {
