@@ -7,8 +7,21 @@
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
+        @import url('https://fonts.googleapis.com/css2?family=Sarabun:wght@400;500;600;700&display=swap');
         body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            font-family: 'Sarabun', sans-serif;
+            background-image: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        }
+        .text-shadow-lg {
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+        }
+        .search-type-container label {
+            transition: all 0.2s ease-in-out;
+        }
+        .search-type-container input:checked + label {
+            background-color: #4f46e5; /* indigo-600 */
+            color: white;
+            box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
         }
         .modal-overlay {
             position: fixed;
@@ -122,34 +135,34 @@
 <body class="bg-gradient-to-r from-purple-500 to-indigo-600">
     <div class="mx-auto px-4 sm:px-6 lg:px-8 max-w-screen-2xl">
         <div class="text-center text-white my-8">
-            <h1 class="text-4xl font-semibold mb-2 text-shadow-lg">PEAC3 Asset Hub</h1>
+            <h1 class="text-4xl sm:text-5xl font-bold mb-2 text-shadow-lg">PEAC3 Asset Hub</h1>
             <p class="text-lg font-medium opacity-90">ศูนย์รวมข้อมูลทรัพย์สิน กฟก.3</p>
         </div>
 
         <div class="bg-white rounded-2xl shadow-2xl overflow-hidden">
             <!-- Search Section -->
-            <div class="p-10 text-center" id="searchSection">
+            <div class="p-8 sm:p-10 text-center" id="searchSection">
                 <h2 class="text-3xl font-semibold text-gray-700 mb-8">ค้นหาข้อมูลทรัพย์สิน</h2>
                 
                 <form class="max-w-4xl mx-auto" id="searchForm">
-                    <div class="mb-6">
-                        <label class="block text-gray-600 font-medium mb-4">ประเภทการค้นหา:</label>
-                        <div class="flex flex-row flex-wrap items-center justify-center gap-x-4 sm:gap-x-6">
-                            <div class="flex items-center gap-2">
-                                <input type="radio" id="assetNumber" name="searchType" value="assetNumber" class="w-5 h-5 accent-indigo-600" checked>
-                                <label for="assetNumber">รหัสทรัพย์สิน</label>
+                    <div class="mb-8">
+                        <label class="block text-gray-700 font-semibold mb-4">ประเภทการค้นหา</label>
+                        <div class="search-type-container flex flex-wrap items-center justify-center gap-2 sm:gap-4 p-2 bg-gray-100 rounded-full">
+                            <div>
+                                <input type="radio" id="assetNumber" name="searchType" value="assetNumber" class="hidden" checked>
+                                <label for="assetNumber" class="px-4 py-2 rounded-full cursor-pointer font-semibold text-gray-600">รหัสทรัพย์สิน</label>
                             </div>
-                            <div class="flex items-center gap-2">
-                                <input type="radio" id="employee" name="searchType" value="employee" class="w-5 h-5 accent-indigo-600">
-                                <label for="employee">รหัสพนักงาน</label>
+                            <div>
+                                <input type="radio" id="employee" name="searchType" value="employee" class="hidden">
+                                <label for="employee" class="px-4 py-2 rounded-full cursor-pointer font-semibold text-gray-600">รหัสพนักงาน</label>
                             </div>
-                            <div class="flex items-center gap-2">
-                                <input type="radio" id="costCenterName" name="searchType" value="costCenterName" class="w-5 h-5 accent-indigo-600">
-                                <label for="costCenterName">ชื่อศูนย์ต้นทุน</label>
+                            <div>
+                                <input type="radio" id="costCenterName" name="searchType" value="costCenterName" class="hidden">
+                                <label for="costCenterName" class="px-4 py-2 rounded-full cursor-pointer font-semibold text-gray-600">ชื่อศูนย์ต้นทุน</label>
                             </div>
-                             <div class="flex items-center gap-2">
-                                <input type="radio" id="businessType" name="searchType" value="businessType" class="w-5 h-5 accent-indigo-600">
-                                <label for="businessType">ประเภทธุรกิจ</label>
+                             <div>
+                                <input type="radio" id="businessType" name="searchType" value="businessType" class="hidden">
+                                <label for="businessType" class="px-4 py-2 rounded-full cursor-pointer font-semibold text-gray-600">ประเภทธุรกิจ</label>
                             </div>
                         </div>
                     </div>
@@ -158,10 +171,10 @@
                         <label for="searchInput" id="searchLabel" class="block text-gray-600 font-medium mb-2">รหัสทรัพย์สิน:</label>
                         <div id="tagContainer" class="tag-container">
                              <input type="text" 
-                                   id="searchInput" 
-                                   class="flex-grow p-2 border-0 focus:outline-none focus:ring-0" 
-                                   placeholder="กรอกข้อมูลแล้วกด Enter เพื่อเพิ่ม"
-                                   autocomplete="off">
+                                    id="searchInput" 
+                                    class="flex-grow p-2 border-0 focus:outline-none focus:ring-0" 
+                                    placeholder="กรอกข้อมูลแล้วกด Enter เพื่อเพิ่ม"
+                                    autocomplete="off">
                         </div>
                         <div id="suggestionsContainer" class="autocomplete-suggestions hidden"></div>
                     </div>
@@ -274,6 +287,9 @@
         // Google Sheets API Configuration
         // ========================================
         
+        // IMPORTANT: Replace with your actual API Key. 
+        // Exposing API keys in client-side code is a security risk.
+        // Consider using a server-side proxy for production environments.
         const API_KEY = 'AIzaSyA5c8JZsxEC7JgLspIjuCU-CCsIAa7TtWg';
         const SHEET_ID = '15nHQmmivX-8UaVFZ_DEsupVP1X0MEIfVWQ0oatmFjDM';
         const SHEET_NAME = 'Data';
@@ -284,20 +300,20 @@
         // Column Mapping
         // ========================================
         const COLUMNS = {
-            BUSINESS_TYPE: 0,      // Column A
-            DEPARTMENT_CODE: 1,    // Column B
-            ASSET_COST_CENTER: 2,  // Column C
-            ASSET_MAIN: 3,         // Column D
-            ASSET_SUB: 4,          // Column E
-            ASSET_DESCRIPTION: 5,  // Column F
-            TRANSFER_DATE: 8,      // Column I
-            ACQUISITION_VALUE: 9,  // Column J
-            DEPRECIATION: 10,      // Column K
-            BOOK_VALUE: 11,        // Column L
-            EMPLOYEE_CODE: 12,     // Column M
-            EMPLOYEE_NAME: 13,     // Column N
-            POSITION: 14,          // Column O
-            DEPARTMENT: 15         // Column P
+            BUSINESS_TYPE: 0,       // Column A
+            DEPARTMENT_CODE: 1,     // Column B
+            ASSET_COST_CENTER: 2,   // Column C
+            ASSET_MAIN: 3,          // Column D
+            ASSET_SUB: 4,           // Column E
+            ASSET_DESCRIPTION: 5,   // Column F
+            TRANSFER_DATE: 8,       // Column I
+            ACQUISITION_VALUE: 9,   // Column J
+            DEPRECIATION: 10,       // Column K
+            BOOK_VALUE: 11,         // Column L
+            EMPLOYEE_CODE: 12,      // Column M
+            EMPLOYEE_NAME: 13,      // Column N
+            POSITION: 14,           // Column O
+            DEPARTMENT: 15          // Column P
         };
 
         // Global variables
@@ -441,7 +457,8 @@
         // ========================================
         
         window.addEventListener('DOMContentLoaded', async function() {
-            if (API_KEY === 'YOUR_API_KEY_HERE') {
+            // A check to prevent running if the key is a placeholder
+            if (API_KEY.includes('YOUR_API_KEY')) {
                 showError('กรุณาใส่ API Key ของ Google Sheets ในโค้ด JavaScript ก่อนใช้งาน');
                 return;
             }
@@ -451,6 +468,7 @@
                 await loadGoogleSheetsData();
                 showSearchSection();
                 
+                // Show a success message after data loads
                 setTimeout(() => {
                     const successMsg = document.createElement('div');
                     successMsg.style.cssText = `
@@ -827,188 +845,188 @@
         
         function generateReportHTML() {
              const selectedData = getSelectedData();
-            if (selectedData.length === 0) {
-                showToast('กรุณาเลือกรายการที่ต้องการ');
-                return null;
-            }
+             if (selectedData.length === 0) {
+                 showToast('กรุณาเลือกรายการที่ต้องการ');
+                 return null;
+             }
 
-            const searchType = document.querySelector('input[name="searchType"]:checked').value;
-            let tableBodyContent = '';
-            
-            const generateRows = (data) => data.map(item => `
-                <tr>
-                    <td>${item.assetMain || '-'}</td>
-                    <td>${item.assetSub || '-'}</td>
-                    <td>${item.assetDescription || '-'}</td>
-                    <td>${item.transferDate || '-'}</td>
-                    <td style="text-align: right;">${formatNumber(item.acquisitionValue)}</td>
-                    <td style="text-align: right;">${formatNumber(item.accumulatedDepreciation)}</td>
-                    <td style="text-align: right;">${formatNumber(item.bookValue)}</td>
-                    <td>${item.assetCostCenter || '-'}</td>
-                </tr>
-            `).join('');
+             const searchType = document.querySelector('input[name="searchType"]:checked').value;
+             let tableBodyContent = '';
+             
+             const generateRows = (data) => data.map(item => `
+                 <tr>
+                     <td>${item.assetMain || '-'}</td>
+                     <td>${item.assetSub || '-'}</td>
+                     <td>${item.assetDescription || '-'}</td>
+                     <td>${item.transferDate || '-'}</td>
+                     <td style="text-align: right;">${formatNumber(item.acquisitionValue)}</td>
+                     <td style="text-align: right;">${formatNumber(item.accumulatedDepreciation)}</td>
+                     <td style="text-align: right;">${formatNumber(item.bookValue)}</td>
+                     <td>${item.assetCostCenter || '-'}</td>
+                 </tr>
+             `).join('');
 
-            const generateSummaryRow = (summary, label, style = 'background-color: #f2f2f2;') => `
-                <tr style="font-weight: bold; ${style}">
-                    <td colspan="4">${label}: ${summary.count} รายการ</td>
-                    <td style="text-align: right;">${formatNumber(summary.totalAcquisition)}</td>
-                    <td style="text-align: right;">${formatNumber(summary.totalDepreciation)}</td>
-                    <td style="text-align: right;">${formatNumber(summary.totalBookValue)}</td>
-                    <td></td>
-                </tr>
-            `;
+             const generateSummaryRow = (summary, label, style = 'background-color: #f2f2f2;') => `
+                 <tr style="font-weight: bold; ${style}">
+                     <td colspan="4">${label}: ${summary.count} รายการ</td>
+                     <td style="text-align: right;">${formatNumber(summary.totalAcquisition)}</td>
+                     <td style="text-align: right;">${formatNumber(summary.totalDepreciation)}</td>
+                     <td style="text-align: right;">${formatNumber(summary.totalBookValue)}</td>
+                     <td></td>
+                 </tr>
+             `;
 
-            if (searchType === 'businessType' || searchTags.length > 1) {
-                const groupKey = searchType === 'businessType' ? 'assetCostCenter' : searchType === 'employee' ? 'employeeCode' : searchType === 'costCenterName' ? 'assetCostCenter' : 'assetMain';
-                const groupLabelPrefix = searchType === 'businessType' ? 'ศูนย์ต้นทุน ท/ส' : 'ผลลัพธ์สำหรับ';
+             if (searchType === 'businessType' || (searchTags.length > 1 && searchType !== 'businessType')) {
+                 const groupKey = searchType === 'businessType' ? 'assetCostCenter' : searchType === 'employee' ? 'employeeCode' : searchType === 'costCenterName' ? 'assetCostCenter' : 'assetMain';
+                 const groupLabelPrefix = searchType === 'businessType' ? 'ศูนย์ต้นทุน ท/ส' : 'ผลลัพธ์สำหรับ';
 
-                const groupedData = selectedData.reduce((acc, item) => {
-                    const key = item[groupKey] || 'ไม่ระบุ';
-                    if (!acc[key]) acc[key] = [];
-                    acc[key].push(item);
-                    return acc;
-                }, {});
+                 const groupedData = selectedData.reduce((acc, item) => {
+                     const key = item[groupKey] || 'ไม่ระบุ';
+                     if (!acc[key]) acc[key] = [];
+                     acc[key].push(item);
+                     return acc;
+                 }, {});
 
-                Object.keys(groupedData).sort().forEach(key => {
-                    const dataForGroup = groupedData[key];
-                    tableBodyContent += `<tr><td colspan="8" style="background-color: #e0e7ff; font-weight: bold;">${groupLabelPrefix}: ${key}</td></tr>`;
-                    tableBodyContent += generateRows(dataForGroup);
-                    const subSummary = calculateSummary(dataForGroup);
-                    tableBodyContent += generateSummaryRow(subSummary, `รวมสำหรับ ${key}`);
-                });
+                 Object.keys(groupedData).sort().forEach(key => {
+                     const dataForGroup = groupedData[key];
+                     tableBodyContent += `<tr><td colspan="8" style="background-color: #e0e7ff; font-weight: bold;">${groupLabelPrefix}: ${key}</td></tr>`;
+                     tableBodyContent += generateRows(dataForGroup);
+                     const subSummary = calculateSummary(dataForGroup);
+                     tableBodyContent += generateSummaryRow(subSummary, `รวมสำหรับ ${key}`);
+                 });
+                 
+                 const grandSummary = calculateSummary(selectedData);
+                 tableBodyContent += generateSummaryRow(grandSummary, 'รวมทั้งหมดทุกรายการ', 'background-color: #d1d5db;');
 
-                const grandSummary = calculateSummary(selectedData);
-                tableBodyContent += generateSummaryRow(grandSummary, 'รวมทั้งหมดทุกรายการ', 'background-color: #d1d5db;');
+             } else {
+                 tableBodyContent += generateRows(selectedData);
+                 const summary = calculateSummary(selectedData);
+                 tableBodyContent += generateSummaryRow(summary, 'รวมทั้งสิ้น');
+             }
 
-            } else {
-                tableBodyContent += generateRows(selectedData);
-                const summary = calculateSummary(selectedData);
-                tableBodyContent += generateSummaryRow(summary, 'รวมทั้งสิ้น');
-            }
+             let userInfoHtml = '';
+             if (currentSearchInfo.type === 'employee' && searchTags.length === 1) {
+                 const employee = currentData[0];
+                 userInfoHtml = `
+                     <div class="info-grid">
+                         <div><strong>ชื่อ-สกุล:</strong> ${employee.assetSupervisorName || '-'}</div>
+                         <div><strong>ตำแหน่ง:</strong> ${employee.position || '-'}</div>
+                         <div><strong>สังกัด:</strong> ${employee.department || '-'}</div>
+                     </div>
+                 `;
+             } else {
+                 userInfoHtml = `<div><strong>ผลการค้นหาสำหรับ:</strong> ${currentSearchInfo.value}</div>`;
+             }
+             
+             const printDate = new Date().toLocaleDateString('th-TH', {
+                 day: 'numeric',
+                 month: 'long',
+                 year: 'numeric'
+             });
 
-            let userInfoHtml = '';
-            if (currentSearchInfo.type === 'employee' && searchTags.length === 1) {
-                const employee = currentData[0];
-                userInfoHtml = `
-                    <div class="info-grid">
-                        <div><strong>ชื่อ-สกุล:</strong> ${employee.assetSupervisorName || '-'}</div>
-                        <div><strong>ตำแหน่ง:</strong> ${employee.position || '-'}</div>
-                        <div><strong>สังกัด:</strong> ${employee.department || '-'}</div>
-                    </div>
-                `;
-            } else {
-                userInfoHtml = `<div><strong>ผลการค้นหาสำหรับ:</strong> ${currentSearchInfo.value}</div>`;
-            }
-            
-            const printDate = new Date().toLocaleDateString('th-TH', {
-                day: 'numeric',
-                month: 'long',
-                year: 'numeric'
-            });
+             const reportFooterHtml = `
+                 <div class="report-footer">
+                     <div class="report-source">
+                         <div>ข้อมูลจากรายงาน S_ALR_87011963</div>
+                         <div>พิมพ์รายงาน ณ วันที่ ${printDate}</div>
+                     </div>
+                 </div>
+             `;
 
-            const reportFooterHtml = `
-                <div class="report-footer">
-                    <div class="report-source">
-                        <div>ข้อมูลจากรายงาน S_ALR_87011963</div>
-                        <div>พิมพ์รายงาน ณ วันที่ ${printDate}</div>
-                    </div>
-                </div>
-            `;
-
-            return `
-                <!DOCTYPE html>
-                <html lang="th">
-                <head>
-                    <title>รายงานยืนยันมูลค่าได้มาและค่าเสื่อมราคา</title>
-                    <style>
-                        @import url('https://fonts.googleapis.com/css2?family=Sarabun:wght@400;700&display=swap');
-                        body {
-                            font-family: 'Sarabun', sans-serif;
-                            margin: 20px;
-                        }
-                        .header {
-                            text-align: center;
-                            margin-bottom: 20px;
-                        }
-                        h1 { font-size: 18pt; margin: 0; }
-                        h2 { font-size: 16pt; margin: 0; font-weight: normal; }
-                        h3 { font-size: 14pt; margin: 5px 0 0 0; font-weight: normal; }
-                        .info-section {
-                            margin-bottom: 20px;
-                            font-size: 12pt;
-                        }
-                        .info-grid {
-                            display: grid;
-                            grid-template-columns: repeat(3, 1fr);
-                            gap: 10px;
-                        }
-                        table {
-                            width: 100%;
-                            border-collapse: collapse;
-                            font-size: 10pt;
-                        }
-                        th, td {
-                            border: 1px solid #000;
-                            padding: 5px;
-                            text-align: left;
-                        }
-                        th {
-                            background-color: #f2f2f2;
-                            font-weight: bold;
-                        }
-                        .report-footer {
-                            margin-top: 40px;
-                            display: flex;
-                            justify-content: space-between;
-                            align-items: flex-end;
-                            page-break-inside: avoid;
-                            width: 100%;
-                        }
-                        .report-source {
-                            font-size: 9pt;
-                            color: #555;
-                        }
-                        @media print {
-                            @page {
-                                size: A4 landscape;
-                                margin: 1cm;
-                            }
-                            body {
-                                margin: 0;
-                            }
-                        }
-                    </style>
-                </head>
-                <body>
-                    <div class="header">
-                        <h1>รายงานยืนยันมูลค่าได้มาและค่าเสื่อมราคา</h1>
-                        <h2>การไฟฟ้าส่วนภูมิภาค เขต 3 (ภาคกลาง) จังหวัดนครปฐม</h2>
-                        <h3>${statusDate ? `สิ้นสุด ณ งวดบัญชี ${statusDate}` : ''}</h3>
-                    </div>
-                    <div class="info-section">
-                        ${userInfoHtml}
-                    </div>
-                    <table>
-                        <thead>
-                            <tr>
-                                <th>เลขทรัพย์สินหลัก</th>
-                                <th>เลขทรัพย์สินย่อย</th>
-                                <th>คำอธิบายทรัพย์สิน</th>
-                                <th>วันที่โอนเป็นทุน</th>
-                                <th>มูลค่าการได้มา</th>
-                                <th>ค่าเสื่อมสะสม</th>
-                                <th>มูลค่าตามบัญชี</th>
-                                <th>ศูนย์ต้นทุน ท/ส</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            ${tableBodyContent}
-                        </tbody>
-                    </table>
-                    ${reportFooterHtml}
-                </body>
-                </html>
-            `;
+             return `
+                 <!DOCTYPE html>
+                 <html lang="th">
+                 <head>
+                     <title>รายงานยืนยันมูลค่าได้มาและค่าเสื่อมราคา</title>
+                     <style>
+                         @import url('https://fonts.googleapis.com/css2?family=Sarabun:wght@400;700&display=swap');
+                         body {
+                             font-family: 'Sarabun', sans-serif;
+                             margin: 20px;
+                         }
+                         .header {
+                             text-align: center;
+                             margin-bottom: 20px;
+                         }
+                         h1 { font-size: 18pt; margin: 0; }
+                         h2 { font-size: 16pt; margin: 0; font-weight: normal; }
+                         h3 { font-size: 14pt; margin: 5px 0 0 0; font-weight: normal; }
+                         .info-section {
+                             margin-bottom: 20px;
+                             font-size: 12pt;
+                         }
+                         .info-grid {
+                             display: grid;
+                             grid-template-columns: repeat(3, 1fr);
+                             gap: 10px;
+                         }
+                         table {
+                             width: 100%;
+                             border-collapse: collapse;
+                             font-size: 10pt;
+                         }
+                         th, td {
+                             border: 1px solid #000;
+                             padding: 5px;
+                             text-align: left;
+                         }
+                         th {
+                             background-color: #f2f2f2;
+                             font-weight: bold;
+                         }
+                         .report-footer {
+                             margin-top: 40px;
+                             display: flex;
+                             justify-content: space-between;
+                             align-items: flex-end;
+                             page-break-inside: avoid;
+                             width: 100%;
+                         }
+                         .report-source {
+                             font-size: 9pt;
+                             color: #555;
+                         }
+                         @media print {
+                             @page {
+                                 size: A4 landscape;
+                                 margin: 1cm;
+                             }
+                             body {
+                                 margin: 0;
+                             }
+                         }
+                     </style>
+                 </head>
+                 <body>
+                     <div class="header">
+                         <h1>รายงานยืนยันมูลค่าได้มาและค่าเสื่อมราคา</h1>
+                         <h2>การไฟฟ้าส่วนภูมิภาค เขต 3 (ภาคกลาง) จังหวัดนครปฐม</h2>
+                         <h3>${statusDate ? `สิ้นสุด ณ งวดบัญชี ${statusDate}` : ''}</h3>
+                     </div>
+                     <div class="info-section">
+                         ${userInfoHtml}
+                     </div>
+                     <table>
+                         <thead>
+                             <tr>
+                                 <th>เลขทรัพย์สินหลัก</th>
+                                 <th>เลขทรัพย์สินย่อย</th>
+                                 <th>คำอธิบายทรัพย์สิน</th>
+                                 <th>วันที่โอนเป็นทุน</th>
+                                 <th>มูลค่าการได้มา</th>
+                                 <th>ค่าเสื่อมสะสม</th>
+                                 <th>มูลค่าตามบัญชี</th>
+                                 <th>ศูนย์ต้นทุน ท/ส</th>
+                             </tr>
+                         </thead>
+                         <tbody>
+                             ${tableBodyContent}
+                         </tbody>
+                     </table>
+                     ${reportFooterHtml}
+                 </body>
+                 </html>
+             `;
         }
 
         function previewReport() {
