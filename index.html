@@ -10,7 +10,8 @@
         @import url('https://fonts.googleapis.com/css2?family=Sarabun:wght@400;500;600;700&display=swap');
         body {
             font-family: 'Sarabun', sans-serif;
-            background-image: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            /* Updated to match the new image's solid purple */
+            background-color: #7e22ce; /* purple-700 */
         }
         .text-shadow-lg {
             text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
@@ -19,7 +20,8 @@
             transition: all 0.2s ease-in-out;
         }
         .search-type-container input:checked + label {
-            background-color: #4f46e5; /* indigo-600 */
+            /* Updated to match the selected button in the image */
+            background-color: #4c1d95; /* violet-800 */
             color: white;
             box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
         }
@@ -132,14 +134,14 @@
         }
     </style>
 </head>
-<body class="bg-gradient-to-r from-purple-500 to-indigo-600">
+<body class="bg-purple-700">
     <div class="mx-auto px-4 sm:px-6 lg:px-8 max-w-screen-2xl">
         <div class="text-center text-white my-8">
             <h1 class="text-4xl sm:text-5xl font-bold mb-2 text-shadow-lg">PEAC3 Asset Hub</h1>
             <p class="text-lg font-medium opacity-90">ศูนย์รวมข้อมูลทรัพย์สิน กฟก.3</p>
         </div>
 
-        <div class="bg-white rounded-2xl shadow-2xl overflow-hidden">
+        <div class="bg-white rounded-2xl shadow-2xl">
             <!-- Search Section -->
             <div class="p-8 sm:p-10 text-center" id="searchSection">
                 <h2 class="text-3xl font-semibold text-gray-700 mb-8">ค้นหาข้อมูลทรัพย์สิน</h2>
@@ -187,7 +189,7 @@
 
             <!-- Loading -->
             <div class="p-10 text-center hidden" id="loading">
-                <div class="spinner-border animate-spin inline-block w-8 h-8 border-4 rounded-full text-indigo-500" role="status"></div>
+                <div class="spinner-border animate-spin inline-block w-8 h-8 border-4 rounded-full text-purple-500" role="status"></div>
                 <p class="mt-4 text-gray-600">กำลังค้นหาข้อมูล...</p>
             </div>
 
@@ -220,7 +222,7 @@
                     <button class="btn-export bg-white text-gray-700 border-2 border-gray-400 font-bold py-2 px-5 rounded-full hover:bg-gray-100 transition-colors" onclick="previewReport()">
                         <i class="fas fa-eye mr-2"></i> ดูตัวอย่าง
                     </button>
-                    <button class="btn-export bg-white text-indigo-600 border-2 border-indigo-600 font-bold py-2 px-5 rounded-full hover:bg-indigo-600 hover:text-white transition-colors" onclick="printReport()">
+                    <button class="btn-export bg-white text-purple-600 border-2 border-purple-600 font-bold py-2 px-5 rounded-full hover:bg-purple-600 hover:text-white transition-colors" onclick="printReport()">
                         <i class="fas fa-print mr-2"></i> พิมพ์รายงาน
                     </button>
                     <button class="btn-export bg-white text-green-600 border-2 border-green-600 font-bold py-2 px-5 rounded-full hover:bg-green-600 hover:text-white transition-colors" onclick="exportToExcel()">
@@ -233,14 +235,14 @@
                     <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                         <i class="fas fa-filter text-gray-400"></i>
                     </div>
-                    <input type="text" id="multifunctionSearchInput" class="w-full pl-10 pr-4 py-2 border-2 border-gray-200 rounded-lg focus:outline-none focus:border-indigo-500" placeholder="กรองข้อมูลในตารางนี้...">
+                    <input type="text" id="multifunctionSearchInput" class="w-full pl-10 pr-4 py-2 border-2 border-gray-200 rounded-lg focus:outline-none focus:border-purple-500" placeholder="กรองข้อมูลในตารางนี้...">
                 </div>
 
                 <div class="overflow-x-auto rounded-lg shadow-md">
                     <table class="w-full text-sm text-left text-gray-600" id="resultsTable">
-                        <thead class="text-xs text-white uppercase bg-gradient-to-r from-purple-500 to-indigo-600">
+                        <thead class="text-xs text-white uppercase bg-gradient-to-r from-purple-700 to-violet-800">
                             <tr>
-                                <th scope="col" class="p-4"><input type="checkbox" id="selectAllCheckbox" class="w-4 h-4 accent-indigo-300"></th>
+                                <th scope="col" class="p-4"><input type="checkbox" id="selectAllCheckbox" class="w-4 h-4 accent-purple-500"></th>
                                 <th scope="col" class="px-6 py-3 sortable" data-sort="assetMain">รหัสทรัพย์สิน <i class="fas fa-sort sort-icon"></i></th>
                                 <th scope="col" class="px-6 py-3 sortable" data-sort="assetSub">เลขทรัพย์สินย่อย <i class="fas fa-sort sort-icon"></i></th>
                                 <th scope="col" class="px-6 py-3 sortable max-w-sm" data-sort="assetDescription">คำอธิบายทรัพย์สิน <i class="fas fa-sort sort-icon"></i></th>
@@ -630,7 +632,7 @@
                 const row = resultsBody.insertRow();
                 row.classList.add('bg-white', 'border-b', 'hover:bg-gray-50');
                 row.innerHTML = `
-                    <td class="p-4"><input type="checkbox" class="row-checkbox w-4 h-4 accent-indigo-600" data-id="${item.id}"></td>
+                    <td class="p-4"><input type="checkbox" class="row-checkbox w-4 h-4 accent-purple-600" data-id="${item.id}"></td>
                     <td class="px-6 py-4">${item.assetMain || '-'}</td>
                     <td class="px-6 py-4">${item.assetSub || '-'}</td>
                     <td class="px-6 py-4 max-w-sm truncate" title="${item.assetDescription || ''}">${item.assetDescription || '-'}</td>
