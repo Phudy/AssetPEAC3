@@ -8,20 +8,27 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Sarabun:wght@400;500;600;700&display=swap');
+        html, body {
+            height: 100%;
+            margin: 0;
+            padding: 0;
+        }
         body {
             font-family: 'Sarabun', sans-serif;
-            /* Updated to match the new image's solid purple */
-            background-color: #7e22ce; /* purple-700 */
+            /* Updated to the new purple-to-blue gradient */
+            background-image: linear-gradient(135deg, #a855f7 0%, #3b82f6 100%);
+            background-repeat: no-repeat;
+            background-attachment: fixed;
         }
         .text-shadow-lg {
-            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.2);
         }
         .search-type-container label {
             transition: all 0.2s ease-in-out;
         }
         .search-type-container input:checked + label {
-            /* Updated to match the selected button in the image */
-            background-color: #4c1d95; /* violet-800 */
+            /* Updated to the solid dark blue from the image */
+            background-color: #4338ca; /* indigo-700 */
             color: white;
             box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
         }
@@ -134,7 +141,7 @@
         }
     </style>
 </head>
-<body class="bg-purple-700">
+<body>
     <div class="mx-auto px-4 sm:px-6 lg:px-8 max-w-screen-2xl">
         <div class="text-center text-white my-8">
             <h1 class="text-4xl sm:text-5xl font-bold mb-2 text-shadow-lg">PEAC3 Asset Hub</h1>
@@ -181,7 +188,7 @@
                         <div id="suggestionsContainer" class="autocomplete-suggestions hidden"></div>
                     </div>
                     
-                    <button type="submit" class="w-full mt-6 bg-gradient-to-r from-purple-500 to-indigo-600 text-white font-bold py-3 px-8 rounded-full text-lg shadow-lg hover:shadow-xl transform hover:-translate-y-1 transition-all duration-300">
+                    <button type="submit" class="w-full mt-6 bg-gradient-to-r from-indigo-500 to-purple-600 text-white font-bold py-3 px-8 rounded-full text-lg shadow-lg hover:shadow-xl transform hover:-translate-y-1 transition-all duration-300">
                         <i class="fas fa-search"></i> ค้นหา
                     </button>
                 </form>
@@ -189,7 +196,7 @@
 
             <!-- Loading -->
             <div class="p-10 text-center hidden" id="loading">
-                <div class="spinner-border animate-spin inline-block w-8 h-8 border-4 rounded-full text-purple-500" role="status"></div>
+                <div class="spinner-border animate-spin inline-block w-8 h-8 border-4 rounded-full text-indigo-500" role="status"></div>
                 <p class="mt-4 text-gray-600">กำลังค้นหาข้อมูล...</p>
             </div>
 
@@ -222,7 +229,7 @@
                     <button class="btn-export bg-white text-gray-700 border-2 border-gray-400 font-bold py-2 px-5 rounded-full hover:bg-gray-100 transition-colors" onclick="previewReport()">
                         <i class="fas fa-eye mr-2"></i> ดูตัวอย่าง
                     </button>
-                    <button class="btn-export bg-white text-purple-600 border-2 border-purple-600 font-bold py-2 px-5 rounded-full hover:bg-purple-600 hover:text-white transition-colors" onclick="printReport()">
+                    <button class="btn-export bg-white text-indigo-600 border-2 border-indigo-600 font-bold py-2 px-5 rounded-full hover:bg-indigo-600 hover:text-white transition-colors" onclick="printReport()">
                         <i class="fas fa-print mr-2"></i> พิมพ์รายงาน
                     </button>
                     <button class="btn-export bg-white text-green-600 border-2 border-green-600 font-bold py-2 px-5 rounded-full hover:bg-green-600 hover:text-white transition-colors" onclick="exportToExcel()">
@@ -235,14 +242,14 @@
                     <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                         <i class="fas fa-filter text-gray-400"></i>
                     </div>
-                    <input type="text" id="multifunctionSearchInput" class="w-full pl-10 pr-4 py-2 border-2 border-gray-200 rounded-lg focus:outline-none focus:border-purple-500" placeholder="กรองข้อมูลในตารางนี้...">
+                    <input type="text" id="multifunctionSearchInput" class="w-full pl-10 pr-4 py-2 border-2 border-gray-200 rounded-lg focus:outline-none focus:border-indigo-500" placeholder="กรองข้อมูลในตารางนี้...">
                 </div>
 
                 <div class="overflow-x-auto rounded-lg shadow-md">
                     <table class="w-full text-sm text-left text-gray-600" id="resultsTable">
-                        <thead class="text-xs text-white uppercase bg-gradient-to-r from-purple-700 to-violet-800">
+                        <thead class="text-xs text-white uppercase bg-gradient-to-r from-indigo-600 to-purple-700">
                             <tr>
-                                <th scope="col" class="p-4"><input type="checkbox" id="selectAllCheckbox" class="w-4 h-4 accent-purple-500"></th>
+                                <th scope="col" class="p-4"><input type="checkbox" id="selectAllCheckbox" class="w-4 h-4 accent-indigo-500"></th>
                                 <th scope="col" class="px-6 py-3 sortable" data-sort="assetMain">รหัสทรัพย์สิน <i class="fas fa-sort sort-icon"></i></th>
                                 <th scope="col" class="px-6 py-3 sortable" data-sort="assetSub">เลขทรัพย์สินย่อย <i class="fas fa-sort sort-icon"></i></th>
                                 <th scope="col" class="px-6 py-3 sortable max-w-sm" data-sort="assetDescription">คำอธิบายทรัพย์สิน <i class="fas fa-sort sort-icon"></i></th>
@@ -263,7 +270,7 @@
             </div>
         </div>
 
-        <footer class="text-center text-white mt-12 pb-4 text-base">
+        <footer class="text-center text-white mt-12 pb-4 text-sm opacity-80">
             <p>ออกแบบและพัฒนาระบบโดย ผบส.กบฟ.(ก3)</p>
         </footer>
     </div>
@@ -632,7 +639,7 @@
                 const row = resultsBody.insertRow();
                 row.classList.add('bg-white', 'border-b', 'hover:bg-gray-50');
                 row.innerHTML = `
-                    <td class="p-4"><input type="checkbox" class="row-checkbox w-4 h-4 accent-purple-600" data-id="${item.id}"></td>
+                    <td class="p-4"><input type="checkbox" class="row-checkbox w-4 h-4 accent-indigo-600" data-id="${item.id}"></td>
                     <td class="px-6 py-4">${item.assetMain || '-'}</td>
                     <td class="px-6 py-4">${item.assetSub || '-'}</td>
                     <td class="px-6 py-4 max-w-sm truncate" title="${item.assetDescription || ''}">${item.assetDescription || '-'}</td>
