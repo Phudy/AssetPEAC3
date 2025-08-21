@@ -272,6 +272,7 @@
 
         <footer class="text-center text-white mt-12 pb-4 text-sm opacity-80">
             <p>ออกแบบและพัฒนาระบบโดย ผบส.กบฟ.(ก3)</p>
+            <p id="visitor-counter" class="mt-2">กำลังโหลดสถิติผู้ใช้งาน...</p>
         </footer>
     </div>
     
@@ -290,6 +291,76 @@
 
     <!-- Excel Generation Library -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+
+    <!-- Firebase Libraries -->
+    <script type="module">
+        // Import the functions you need from the SDKs you need
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+        import { getFirestore, doc, runTransaction, onSnapshot } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+        import { getAuth, signInAnonymously, signInWithCustomToken } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+
+        // Your web app's Firebase configuration
+        // This configuration will be automatically provided in the execution environment.
+        const firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : {
+            apiKey: "YOUR_FALLBACK_API_KEY",
+            authDomain: "YOUR_FALLBACK_AUTH_DOMAIN",
+            projectId: "YOUR_FALLBACK_PROJECT_ID",
+            storageBucket: "YOUR_FALLBACK_STORAGE_BUCKET",
+            messagingSenderId: "YOUR_FALLBACK_MESSAGING_SENDER_ID",
+            appId: "YOUR_FALLBACK_APP_ID"
+        };
+
+        // Initialize Firebase
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+        const auth = getAuth(app);
+
+        // Function to update and display visitor count
+        async function updateVisitorCount() {
+            try {
+                // Sign in with custom token if available, otherwise sign in anonymously
+                if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
+                    await signInWithCustomToken(auth, __initial_auth_token);
+                } else {
+                    await signInAnonymously(auth);
+                }
+
+                const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-peac3-asset-hub';
+                const counterElement = document.getElementById('visitor-counter');
+                const counterRef = doc(db, `/artifacts/${appId}/public/data/stats`, "visitorCounter");
+
+                // Use a transaction to safely increment the counter
+                await runTransaction(db, async (transaction) => {
+                    const counterDoc = await transaction.get(counterRef);
+                    if (!counterDoc.exists()) {
+                        transaction.set(counterRef, { count: 1 });
+                    } else {
+                        const newCount = counterDoc.data().count + 1;
+                        transaction.update(counterRef, { count: newCount });
+                    }
+                });
+
+                // Listen for real-time updates to the counter
+                onSnapshot(counterRef, (doc) => {
+                    if (doc.exists()) {
+                        const count = doc.data().count;
+                        counterElement.innerHTML = `<i class="fas fa-chart-bar mr-2"></i>สถิติผู้ใช้งานระบบ: ${count.toLocaleString('th-TH')} ครั้ง`;
+                    } else {
+                        counterElement.textContent = 'ยังไม่มีสถิติ';
+                    }
+                });
+
+            } catch (error) {
+                console.error("Error updating visitor count:", error);
+                const counterElement = document.getElementById('visitor-counter');
+                counterElement.textContent = 'ไม่สามารถโหลดสถิติได้';
+            }
+        }
+        
+        // Call the function when the page loads
+        document.addEventListener('DOMContentLoaded', updateVisitorCount);
+
+    </script>
 
     <script>
         // ========================================
