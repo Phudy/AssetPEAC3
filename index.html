@@ -8,14 +8,8 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Sarabun:wght@400;500;600;700&display=swap');
-        html, body {
-            height: 100%;
-            margin: 0;
-            padding: 0;
-        }
         body {
             font-family: 'Sarabun', sans-serif;
-            /* Updated to the new purple-to-blue gradient */
             background-image: linear-gradient(135deg, #a855f7 0%, #3b82f6 100%);
             background-repeat: no-repeat;
             background-attachment: fixed;
@@ -27,7 +21,6 @@
             transition: all 0.2s ease-in-out;
         }
         .search-type-container input:checked + label {
-            /* Updated to the solid dark blue from the image */
             background-color: #4338ca; /* indigo-700 */
             color: white;
             box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
@@ -80,7 +73,7 @@
         }
         #previewModal iframe {
             width: 100%;
-            height: calc(100% - 57px); /* Adjust based on header height */
+            height: calc(100% - 57px);
             border: none;
         }
         .tag-container {
@@ -139,10 +132,15 @@
         .sortable.desc .fa-sort-down {
             opacity: 1;
         }
+        .quick-filter-btn.active {
+            background-color: #4f46e5;
+            color: white;
+            border-color: #4f46e5;
+        }
     </style>
 </head>
 <body>
-    <div class="mx-auto px-4 sm:px-6 lg:px-8 max-w-screen-2xl">
+    <div class="mx-auto px-4 sm:px-6 lg:px-8">
         <div class="text-center text-white my-8">
             <h1 class="text-4xl sm:text-5xl font-bold mb-2 text-shadow-lg">PEAC3 Asset Hub</h1>
             <p class="text-lg font-medium opacity-90">ศูนย์รวมข้อมูลทรัพย์สิน กฟก.3</p>
@@ -182,7 +180,7 @@
                              <input type="text" 
                                     id="searchInput" 
                                     class="flex-grow p-2 border-0 focus:outline-none focus:ring-0" 
-                                    placeholder="กรอกข้อมูลแล้วกด Enter เพื่อเพิ่ม"
+                                    placeholder="กรอกข้อมูล, วางข้อมูลจาก Excel, หรือกรอกเป็นช่วง (เช่น 100-105) แล้วกด Enter"
                                     autocomplete="off">
                         </div>
                         <div id="suggestionsContainer" class="autocomplete-suggestions hidden"></div>
@@ -236,6 +234,29 @@
                         <i class="fas fa-file-excel mr-2"></i> Export to Excel
                     </button>
                 </div>
+
+                <!-- Disposal Alert -->
+                <div id="disposalAlertContainer" class="hidden mb-6 p-4 bg-yellow-100 border-l-4 border-yellow-500 text-yellow-800 rounded-r-lg shadow-md" role="alert">
+                    <!-- Content will be injected by JavaScript -->
+                </div>
+
+                <div class="my-6 p-4 bg-gray-50 rounded-lg">
+                    <div id="quickFilterContainer" class="flex flex-wrap items-center justify-center gap-3">
+                        <span class="font-semibold text-gray-600 mr-2">ตัวกรองด่วน:</span>
+                        <button id="filterBtnAll" class="quick-filter-btn px-4 py-1.5 border-2 border-gray-300 text-gray-600 rounded-full text-sm font-semibold hover:bg-gray-200 transition-colors active">
+                            แสดงทั้งหมด
+                        </button>
+                        <button id="filterBtnBookValue" class="quick-filter-btn px-4 py-1.5 border-2 border-gray-300 text-gray-600 rounded-full text-sm font-semibold hover:bg-gray-200 transition-colors">
+                            มูลค่าตามบัญชี 1 บาท
+                        </button>
+                        <button id="filterBtnDamaged" class="quick-filter-btn px-4 py-1.5 border-2 border-gray-300 text-gray-600 rounded-full text-sm font-semibold hover:bg-gray-200 transition-colors">
+                            ชำรุด/สภาพดีแต่ไม่ได้ใช้งาน
+                        </button>
+                        <button id="filterBtnDisposed" class="quick-filter-btn px-4 py-1.5 border-2 border-gray-300 text-gray-600 rounded-full text-sm font-semibold hover:bg-gray-200 transition-colors">
+                            จำหน่าย(ขาย/ทำลาย)
+                        </button>
+                    </div>
+                </div>
                 
                 <div class="mb-4 relative">
                     <label for="multifunctionSearchInput" class="sr-only">กรองข้อมูล</label>
@@ -259,6 +280,7 @@
                                 <th scope="col" class="px-6 py-3 text-right sortable" data-sort="bookValue">มูลค่าตามบัญชี <i class="fas fa-sort sort-icon"></i></th>
                                 <th scope="col" class="px-6 py-3 sortable" data-sort="assetSupervisorName">ชื่อผู้ดูแล ท/ส <i class="fas fa-sort sort-icon"></i></th>
                                 <th scope="col" class="px-6 py-3 sortable" data-sort="assetCostCenter">ศูนย์ต้นทุน ท/ส <i class="fas fa-sort sort-icon"></i></th>
+                                <th scope="col" class="px-6 py-3 sortable" data-sort="status">สถานะ <i class="fas fa-sort sort-icon"></i></th>
                             </tr>
                         </thead>
                         <tbody id="resultsBody">
@@ -272,7 +294,6 @@
 
         <footer class="text-center text-white mt-12 pb-4 text-sm opacity-80">
             <p>ออกแบบและพัฒนาระบบโดย ผบส.กบฟ.(ก3)</p>
-            <p id="visitor-counter" class="mt-2">กำลังโหลดสถิติผู้ใช้งาน...</p>
         </footer>
     </div>
     
@@ -292,84 +313,11 @@
     <!-- Excel Generation Library -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 
-    <!-- Firebase Libraries -->
-    <script type="module">
-        // Import the functions you need from the SDKs you need
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-        import { getFirestore, doc, runTransaction, onSnapshot } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
-        import { getAuth, signInAnonymously, signInWithCustomToken } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
-
-        // Your web app's Firebase configuration
-        // This configuration will be automatically provided in the execution environment.
-        const firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : {
-            apiKey: "YOUR_FALLBACK_API_KEY",
-            authDomain: "YOUR_FALLBACK_AUTH_DOMAIN",
-            projectId: "YOUR_FALLBACK_PROJECT_ID",
-            storageBucket: "YOUR_FALLBACK_STORAGE_BUCKET",
-            messagingSenderId: "YOUR_FALLBACK_MESSAGING_SENDER_ID",
-            appId: "YOUR_FALLBACK_APP_ID"
-        };
-
-        // Initialize Firebase
-        const app = initializeApp(firebaseConfig);
-        const db = getFirestore(app);
-        const auth = getAuth(app);
-
-        // Function to update and display visitor count
-        async function updateVisitorCount() {
-            try {
-                // Sign in with custom token if available, otherwise sign in anonymously
-                if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
-                    await signInWithCustomToken(auth, __initial_auth_token);
-                } else {
-                    await signInAnonymously(auth);
-                }
-
-                const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-peac3-asset-hub';
-                const counterElement = document.getElementById('visitor-counter');
-                const counterRef = doc(db, `/artifacts/${appId}/public/data/stats`, "visitorCounter");
-
-                // Use a transaction to safely increment the counter
-                await runTransaction(db, async (transaction) => {
-                    const counterDoc = await transaction.get(counterRef);
-                    if (!counterDoc.exists()) {
-                        transaction.set(counterRef, { count: 1 });
-                    } else {
-                        const newCount = counterDoc.data().count + 1;
-                        transaction.update(counterRef, { count: newCount });
-                    }
-                });
-
-                // Listen for real-time updates to the counter
-                onSnapshot(counterRef, (doc) => {
-                    if (doc.exists()) {
-                        const count = doc.data().count;
-                        counterElement.innerHTML = `<i class="fas fa-chart-bar mr-2"></i>สถิติผู้ใช้งานระบบ: ${count.toLocaleString('th-TH')} ครั้ง`;
-                    } else {
-                        counterElement.textContent = 'ยังไม่มีสถิติ';
-                    }
-                });
-
-            } catch (error) {
-                console.error("Error updating visitor count:", error);
-                const counterElement = document.getElementById('visitor-counter');
-                counterElement.textContent = 'ไม่สามารถโหลดสถิติได้';
-            }
-        }
-        
-        // Call the function when the page loads
-        document.addEventListener('DOMContentLoaded', updateVisitorCount);
-
-    </script>
-
     <script>
         // ========================================
         // Google Sheets API Configuration
         // ========================================
         
-        // IMPORTANT: Replace with your actual API Key. 
-        // Exposing API keys in client-side code is a security risk.
-        // Consider using a server-side proxy for production environments.
         const API_KEY = 'AIzaSyA5c8JZsxEC7JgLspIjuCU-CCsIAa7TtWg';
         const SHEET_ID = '15nHQmmivX-8UaVFZ_DEsupVP1X0MEIfVWQ0oatmFjDM';
         const SHEET_NAME = 'Data';
@@ -380,20 +328,21 @@
         // Column Mapping
         // ========================================
         const COLUMNS = {
-            BUSINESS_TYPE: 0,       // Column A
-            DEPARTMENT_CODE: 1,     // Column B
-            ASSET_COST_CENTER: 2,   // Column C
-            ASSET_MAIN: 3,          // Column D
-            ASSET_SUB: 4,           // Column E
-            ASSET_DESCRIPTION: 5,   // Column F
-            TRANSFER_DATE: 8,       // Column I
-            ACQUISITION_VALUE: 9,   // Column J
-            DEPRECIATION: 10,       // Column K
-            BOOK_VALUE: 11,         // Column L
-            EMPLOYEE_CODE: 12,      // Column M
-            EMPLOYEE_NAME: 13,      // Column N
-            POSITION: 14,           // Column O
-            DEPARTMENT: 15          // Column P
+            BUSINESS_TYPE: 0,      // Column A
+            DEPARTMENT_CODE: 1,    // Column B
+            ASSET_COST_CENTER: 2,  // Column C
+            ASSET_MAIN: 3,         // Column D
+            ASSET_SUB: 4,          // Column E
+            ASSET_DESCRIPTION: 5,  // Column F
+            TRANSFER_DATE: 8,      // Column I
+            ACQUISITION_VALUE: 9,  // Column J
+            DEPRECIATION: 10,      // Column K
+            BOOK_VALUE: 11,        // Column L
+            EMPLOYEE_CODE: 12,     // Column M
+            EMPLOYEE_NAME: 13,     // Column N
+            POSITION: 14,          // Column O
+            DEPARTMENT: 15,        // Column P
+            STATUS: 19             // Column T
         };
 
         // Global variables
@@ -448,7 +397,8 @@
                         employeeCode: row[COLUMNS.EMPLOYEE_CODE] || '',
                         assetSupervisorName: supervisorName || '',
                         position: row[COLUMNS.POSITION] || '',
-                        department: row[COLUMNS.DEPARTMENT] || ''
+                        department: row[COLUMNS.DEPARTMENT] || '',
+                        status: row[COLUMNS.STATUS] || ''
                     };
                 }).filter(row => 
                     row.assetMain || row.employeeCode || row.departmentCode
@@ -508,16 +458,16 @@
                 
                 if (this.value === 'employee') {
                     searchLabel.textContent = 'รหัสพนักงาน:';
-                    searchInput.placeholder = 'กรอกรหัสแล้วกด Enter เพื่อเพิ่ม';
+                    searchInput.placeholder = 'พิมพ์รหัสพนักงาน 6 หลักเพื่อเพิ่มอัตโนมัติ';
                 } else if (this.value === 'costCenterName') {
                     searchLabel.textContent = 'ชื่อศูนย์ต้นทุน:';
                     searchInput.placeholder = 'พิมพ์เพื่อค้นหาและเลือก';
                 } else if (this.value === 'businessType') {
                     searchLabel.textContent = 'ประเภทธุรกิจ:';
-                    searchInput.placeholder = 'กรอกประเภทธุรกิจแล้วกด Enter';
+                    searchInput.placeholder = 'พิมพ์รหัส 4 หลักเพื่อเพิ่มอัตโนมัติ';
                 } else { // assetNumber
                     searchLabel.textContent = 'รหัสทรัพย์สิน:';
-                    searchInput.placeholder = 'กรอกรหัสทรัพย์สิน หรือช่วง (เช่น 100-105) แล้วกด Enter';
+                    searchInput.placeholder = 'พิมพ์รหัส 9 หลัก (เดี่ยว/ช่วง) เพื่อเพิ่มอัตโนมัติ, หรือวางจาก Excel';
                 }
             });
         });
@@ -537,8 +487,7 @@
         // ========================================
         
         window.addEventListener('DOMContentLoaded', async function() {
-            // A check to prevent running if the key is a placeholder
-            if (API_KEY.includes('YOUR_API_KEY')) {
+            if (API_KEY.includes('YOUR_FALLBACK_API_KEY')) {
                 showError('กรุณาใส่ API Key ของ Google Sheets ในโค้ด JavaScript ก่อนใช้งาน');
                 return;
             }
@@ -548,7 +497,6 @@
                 await loadGoogleSheetsData();
                 showSearchSection();
                 
-                // Show a success message after data loads
                 setTimeout(() => {
                     const successMsg = document.createElement('div');
                     successMsg.style.cssText = `
@@ -654,6 +602,25 @@
                 resultsInfo.innerHTML = `<strong>ผลการค้นหาสำหรับ:</strong> ${currentSearchInfo.value}`;
             }
             
+            // Disposal Alert Logic
+            const disposalAlertContainer = document.getElementById('disposalAlertContainer');
+            const disposalItems = data.filter(item => item.status === 'จำหน่าย(ขาย)' || item.status === 'จำหน่าย(ทำลาย)');
+
+            if (disposalItems.length > 0) {
+                disposalAlertContainer.innerHTML = `
+                    <div class="flex items-center">
+                        <div class="text-2xl mr-4">⚠️</div>
+                        <div>
+                            <p class="font-bold">ท่านมีทรัพย์สินที่ได้รับอนุมัติจำหน่ายแล้ว แต่ยังไม่ได้ขายหรือทำลาย จำนวน ${disposalItems.length} รายการ</p>
+                            <p class="text-sm">โปรดเร่งรัดดำเนินการขาย หรือ ทำลาย ภายใน 60 วันนับตั้งแต่วันที่ได้รับอนุมัติ และประสานงานให้เจ้าหน้าที่บัญชี AA ดำเนินการตัดจำหน่ายในระบบ SAP ต่อไป</p>
+                        </div>
+                    </div>
+                `;
+                disposalAlertContainer.classList.remove('hidden');
+            } else {
+                disposalAlertContainer.classList.add('hidden');
+            }
+            
             renderTable(data);
 
             const selectAllCheckbox = document.getElementById('selectAllCheckbox');
@@ -666,27 +633,6 @@
             
             const multifunctionSearchInput = document.getElementById('multifunctionSearchInput');
             multifunctionSearchInput.value = '';
-            multifunctionSearchInput.addEventListener('input', () => {
-                const searchTerm = multifunctionSearchInput.value.toLowerCase().trim();
-                const filteredDisplayData = currentData.filter(item => {
-                    if (searchTerm === '1.00') {
-                        return formatNumber(item.bookValue) === '1.00';
-                    }
-                    return (
-                        String(item.assetMain).toLowerCase().includes(searchTerm) ||
-                        String(item.assetSub).toLowerCase().includes(searchTerm) ||
-                        String(item.assetDescription).toLowerCase().includes(searchTerm) ||
-                        String(item.transferDate).toLowerCase().includes(searchTerm) ||
-                        formatNumber(item.acquisitionValue).includes(searchTerm) ||
-                        formatNumber(item.accumulatedDepreciation).includes(searchTerm) ||
-                        formatNumber(item.bookValue).includes(searchTerm) ||
-                        String(item.assetSupervisorName).toLowerCase().includes(searchTerm) ||
-                        String(item.assetCostCenter).toLowerCase().includes(searchTerm) ||
-                        String(item.businessType).toLowerCase().includes(searchTerm)
-                    );
-                });
-                renderTable(filteredDisplayData);
-            });
             
             document.querySelectorAll('#resultsTable thead th.sortable').forEach(th => {
                 th.addEventListener('click', () => {
@@ -700,6 +646,9 @@
                     sortAndRenderTable();
                 });
             });
+
+            // Initialize Quick Filters
+            initializeQuickFilters();
         }
         
         function renderTable(dataToRender) {
@@ -709,6 +658,12 @@
             dataToRender.forEach(item => {
                 const row = resultsBody.insertRow();
                 row.classList.add('bg-white', 'border-b', 'hover:bg-gray-50');
+                
+                let statusHtml = item.status || '-';
+                if (statusHtml === 'จำหน่าย(ขาย)' || statusHtml === 'จำหน่าย(ทำลาย)') {
+                    statusHtml = `<span class="text-red-600 font-semibold">${statusHtml}</span>`;
+                }
+
                 row.innerHTML = `
                     <td class="p-4"><input type="checkbox" class="row-checkbox w-4 h-4 accent-indigo-600" data-id="${item.id}"></td>
                     <td class="px-6 py-4">${item.assetMain || '-'}</td>
@@ -720,6 +675,7 @@
                     <td class="px-6 py-4 text-right">${formatNumber(item.bookValue)}</td>
                     <td class="px-6 py-4">${item.assetSupervisorName || '-'}</td>
                     <td class="px-6 py-4">${item.assetCostCenter || '-'}</td>
+                    <td class="px-6 py-4">${statusHtml}</td>
                 `;
             });
             
@@ -728,7 +684,7 @@
 
         function formatNumber(value) {
             if (!value || value === '') return '-';
-            const numValue = parseFloat(value.toString().replace(/,/g, ''));
+            const numValue = parseFloat(String(value).replace(/,/g, ''));
             if (isNaN(numValue)) return value;
             return new Intl.NumberFormat('th-TH', {
                 minimumFractionDigits: 2,
@@ -773,7 +729,7 @@
                     <th class="px-6 py-3 text-right">${formatNumber(summary.totalAcquisition)}</th>
                     <th class="px-6 py-3 text-right">${formatNumber(summary.totalDepreciation)}</th>
                     <th class="px-6 py-3 text-right">${formatNumber(summary.totalBookValue)}</th>
-                    <th class="px-6 py-3" colspan="2"></th>
+                    <th class="px-6 py-3" colspan="3"></th>
                 </tr>
             `;
         }
@@ -820,6 +776,15 @@
             }
         });
 
+        searchInput.addEventListener('paste', (e) => {
+            const searchType = document.querySelector('input[name="searchType"]:checked').value;
+            if (searchType !== 'assetNumber') return;
+            e.preventDefault();
+            const pastedText = (e.clipboardData || window.clipboardData).getData('text');
+            const items = pastedText.split(/[\n\t\s]+/).filter(item => item.trim() !== '');
+            items.forEach(item => addTag(item.trim()));
+        });
+
         searchInput.addEventListener('keydown', (e) => {
             if (e.key === 'Enter') {
                 e.preventDefault();
@@ -832,12 +797,34 @@
 
         searchInput.addEventListener('input', () => {
             const searchType = document.querySelector('input[name="searchType"]:checked').value;
+            const inputValue = searchInput.value;
+
+            if (searchType === 'employee' && inputValue.length === 6) {
+                addTag(inputValue);
+                return;
+            }
+
+            if (searchType === 'assetNumber') {
+                if (/^\d{9}$/.test(inputValue)) {
+                    addTag(inputValue);
+                    return;
+                }
+                if (/^\d{9}-\d{9}$/.test(inputValue)) {
+                    addTag(inputValue);
+                    return;
+                }
+            }
+
+            if (searchType === 'businessType' && inputValue.length === 4) {
+                addTag(inputValue);
+                return;
+            }
+
             if (searchType !== 'costCenterName') {
                 suggestionsContainer.classList.add('hidden');
                 return;
             }
 
-            const inputValue = searchInput.value.toLowerCase();
             if (inputValue.length < 1) {
                 suggestionsContainer.classList.add('hidden');
                 return;
@@ -871,7 +858,10 @@
         // Sorting Logic
         // ========================================
         function sortAndRenderTable() {
-            if (!currentSort.column) return;
+            if (!currentSort.column) {
+                 renderTable(currentData); // Render unsorted if no column selected
+                 return;
+            };
             
             const sortedData = [...currentData].sort((a, b) => {
                 let valA = a[currentSort.column];
@@ -920,193 +910,307 @@
         }
 
         // ========================================
+        // Filter Logic
+        // ========================================
+        function initializeQuickFilters() {
+            const filterButtons = document.querySelectorAll('.quick-filter-btn');
+            const multifunctionInput = document.getElementById('multifunctionSearchInput');
+
+            const applyFilter = (filterFn) => {
+                const filtered = currentData.filter(filterFn);
+                renderTable(filtered);
+                multifunctionInput.value = '';
+            };
+
+            const setActiveButton = (activeBtn) => {
+                filterButtons.forEach(btn => btn.classList.remove('active'));
+                activeBtn.classList.add('active');
+            };
+
+            document.getElementById('filterBtnAll').addEventListener('click', (e) => {
+                renderTable(currentData);
+                setActiveButton(e.target);
+            });
+
+            document.getElementById('filterBtnBookValue').addEventListener('click', (e) => {
+                applyFilter(item => formatNumber(item.bookValue) === '1.00');
+                setActiveButton(e.target);
+            });
+
+            document.getElementById('filterBtnDamaged').addEventListener('click', (e) => {
+                applyFilter(item => item.status === 'ชำรุด' || item.status === 'สภาพดีแต่ไม่ได้ใช้งาน');
+                setActiveButton(e.target);
+            });
+
+            document.getElementById('filterBtnDisposed').addEventListener('click', (e) => {
+                applyFilter(item => item.status === 'จำหน่าย(ขาย)' || item.status === 'จำหน่าย(ทำลาย)');
+                setActiveButton(e.target);
+            });
+
+            multifunctionInput.addEventListener('input', () => {
+                filterButtons.forEach(btn => btn.classList.remove('active'));
+                const searchTerm = multifunctionInput.value.toLowerCase().trim();
+                
+                if (searchTerm === '') {
+                    renderTable(currentData);
+                    document.getElementById('filterBtnAll').classList.add('active');
+                    return;
+                }
+
+                const filteredDisplayData = currentData.filter(item => {
+                    if (searchTerm === '1.00') {
+                        return formatNumber(item.bookValue) === '1.00';
+                    }
+                    return Object.values(item).some(val => 
+                        String(val).toLowerCase().includes(searchTerm)
+                    );
+                });
+                renderTable(filteredDisplayData);
+            });
+             // Set initial active state
+            document.getElementById('filterBtnAll').classList.add('active');
+        }
+
+        // ========================================
         // Export & Report Functions
         // ========================================
         
         function generateReportHTML() {
-             const selectedData = getSelectedData();
-             if (selectedData.length === 0) {
-                 showToast('กรุณาเลือกรายการที่ต้องการ');
-                 return null;
-             }
+            const selectedData = getSelectedData();
+            if (selectedData.length === 0) {
+                showToast('กรุณาเลือกรายการที่ต้องการ');
+                return null;
+            }
 
-             const searchType = document.querySelector('input[name="searchType"]:checked').value;
-             let tableBodyContent = '';
-             
-             const generateRows = (data) => data.map(item => `
-                 <tr>
-                     <td>${item.assetMain || '-'}</td>
-                     <td>${item.assetSub || '-'}</td>
-                     <td>${item.assetDescription || '-'}</td>
-                     <td>${item.transferDate || '-'}</td>
-                     <td style="text-align: right;">${formatNumber(item.acquisitionValue)}</td>
-                     <td style="text-align: right;">${formatNumber(item.accumulatedDepreciation)}</td>
-                     <td style="text-align: right;">${formatNumber(item.bookValue)}</td>
-                     <td>${item.assetCostCenter || '-'}</td>
-                 </tr>
-             `).join('');
+            const searchType = document.querySelector('input[name="searchType"]:checked').value;
+            let tableBodyHtml = '';
 
-             const generateSummaryRow = (summary, label, style = 'background-color: #f2f2f2;') => `
-                 <tr style="font-weight: bold; ${style}">
-                     <td colspan="4">${label}: ${summary.count} รายการ</td>
-                     <td style="text-align: right;">${formatNumber(summary.totalAcquisition)}</td>
-                     <td style="text-align: right;">${formatNumber(summary.totalDepreciation)}</td>
-                     <td style="text-align: right;">${formatNumber(summary.totalBookValue)}</td>
-                     <td></td>
-                 </tr>
-             `;
+            const generateRows = (data) => data.map(item => `
+                <tr>
+                    <td>${item.assetMain || '-'}</td>
+                    <td>${item.assetSub || '-'}</td>
+                    <td>${item.assetDescription || '-'}</td>
+                    <td>${item.transferDate || '-'}</td>
+                    <td style="text-align: right;">${formatNumber(item.acquisitionValue)}</td>
+                    <td style="text-align: right;">${formatNumber(item.accumulatedDepreciation)}</td>
+                    <td style="text-align: right;">${formatNumber(item.bookValue)}</td>
+                    <td>${item.assetCostCenter || '-'}</td>
+                </tr>
+            `).join('');
 
-             if (searchType === 'businessType' || (searchTags.length > 1 && searchType !== 'businessType')) {
-                 const groupKey = searchType === 'businessType' ? 'assetCostCenter' : searchType === 'employee' ? 'employeeCode' : searchType === 'costCenterName' ? 'assetCostCenter' : 'assetMain';
-                 const groupLabelPrefix = searchType === 'businessType' ? 'ศูนย์ต้นทุน ท/ส' : 'ผลลัพธ์สำหรับ';
+            const generateSummaryRow = (summary, label, isGrandTotal = false) => {
+                const style = isGrandTotal 
+                    ? 'background-color: #d1d5db; border-top: 2px solid #000;' 
+                    : 'background-color: #f0f0f0;';
+                return `
+                    <tr style="font-weight: bold; ${style}">
+                        <td colspan="4">${label}: ${summary.count} รายการ</td>
+                        <td style="text-align: right;">${formatNumber(summary.totalAcquisition)}</td>
+                        <td style="text-align: right;">${formatNumber(summary.totalDepreciation)}</td>
+                        <td style="text-align: right;">${formatNumber(summary.totalBookValue)}</td>
+                        <td></td>
+                    </tr>
+                `;
+            };
 
-                 const groupedData = selectedData.reduce((acc, item) => {
-                     const key = item[groupKey] || 'ไม่ระบุ';
-                     if (!acc[key]) acc[key] = [];
-                     acc[key].push(item);
-                     return acc;
-                 }, {});
+            const grandSummary = calculateSummary(selectedData);
+            
+            if (searchType === 'businessType') {
+                const groupedData = selectedData.reduce((acc, item) => {
+                    const key = item.assetCostCenter || 'ไม่ระบุ';
+                    if (!acc[key]) acc[key] = [];
+                    acc[key].push(item);
+                    return acc;
+                }, {});
 
-                 Object.keys(groupedData).sort().forEach(key => {
-                     const dataForGroup = groupedData[key];
-                     tableBodyContent += `<tr><td colspan="8" style="background-color: #e0e7ff; font-weight: bold;">${groupLabelPrefix}: ${key}</td></tr>`;
-                     tableBodyContent += generateRows(dataForGroup);
-                     const subSummary = calculateSummary(dataForGroup);
-                     tableBodyContent += generateSummaryRow(subSummary, `รวมสำหรับ ${key}`);
-                 });
-                 
-                 const grandSummary = calculateSummary(selectedData);
-                 tableBodyContent += generateSummaryRow(grandSummary, 'รวมทั้งหมดทุกรายการ', 'background-color: #d1d5db;');
+                Object.keys(groupedData).sort().forEach(key => {
+                    const dataForGroup = groupedData[key];
+                    tableBodyHtml += `<tr><td colspan="8" style="background-color: #e0e7ff; font-weight: bold;">ชื่อศูนย์ต้นทุน: ${key}</td></tr>`;
+                    tableBodyHtml += generateRows(dataForGroup);
+                    const subSummary = calculateSummary(dataForGroup);
+                    tableBodyHtml += generateSummaryRow(subSummary, `รวมสำหรับ ${key}`);
+                });
+                
+                tableBodyHtml += generateSummaryRow(grandSummary, 'รวมทั้งหมดทุกรายการ', true);
 
-             } else {
-                 tableBodyContent += generateRows(selectedData);
-                 const summary = calculateSummary(selectedData);
-                 tableBodyContent += generateSummaryRow(summary, 'รวมทั้งสิ้น');
-             }
+            } else if (searchType === 'assetNumber' && searchTags.length > 1) {
+                const groupedData = selectedData.reduce((acc, item) => {
+                    const key = item.assetCostCenter || 'ไม่ระบุ';
+                    if (!acc[key]) acc[key] = [];
+                    acc[key].push(item);
+                    return acc;
+                }, {});
 
-             let userInfoHtml = '';
-             if (currentSearchInfo.type === 'employee' && searchTags.length === 1) {
-                 const employee = currentData[0];
-                 userInfoHtml = `
-                     <div class="info-grid">
-                         <div><strong>ชื่อ-สกุล:</strong> ${employee.assetSupervisorName || '-'}</div>
-                         <div><strong>ตำแหน่ง:</strong> ${employee.position || '-'}</div>
-                         <div><strong>สังกัด:</strong> ${employee.department || '-'}</div>
-                     </div>
-                 `;
-             } else {
-                 userInfoHtml = `<div><strong>ผลการค้นหาสำหรับ:</strong> ${currentSearchInfo.value}</div>`;
-             }
-             
-             const printDate = new Date().toLocaleDateString('th-TH', {
-                 day: 'numeric',
-                 month: 'long',
-                 year: 'numeric'
-             });
+                Object.keys(groupedData).sort().forEach(key => {
+                    const dataForGroup = groupedData[key];
+                    tableBodyHtml += `<tr><td colspan="8" style="background-color: #e0e7ff; font-weight: bold;">ศูนย์ต้นทุน ท/ส: ${key}</td></tr>`;
+                    tableBodyHtml += generateRows(dataForGroup);
+                    const subSummary = calculateSummary(dataForGroup);
+                    tableBodyHtml += generateSummaryRow(subSummary, `รวมสำหรับ ${key}`);
+                });
+                
+                tableBodyHtml += generateSummaryRow(grandSummary, 'รวมทั้งหมดทุกรายการ', true);
 
-             const reportFooterHtml = `
-                 <div class="report-footer">
-                     <div class="report-source">
-                         <div>ข้อมูลจากรายงาน S_ALR_87011963</div>
-                         <div>พิมพ์รายงาน ณ วันที่ ${printDate}</div>
-                     </div>
-                 </div>
-             `;
+            } else if (searchTags.length > 1) {
+                searchTags.forEach(tag => {
+                    const dataForTag = selectedData.filter(item => {
+                        let valueToMatch = '';
+                        if (searchType === 'employee') valueToMatch = item.employeeCode;
+                        else if (searchType === 'costCenterName') valueToMatch = item.assetCostCenter;
+                        
+                        if (searchType === 'assetNumber' && tag.includes('-')) {
+                            const [startStr, endStr] = tag.split('-');
+                            const start = parseInt(startStr, 10);
+                            const end = parseInt(endStr, 10);
+                            const assetNum = parseInt(item.assetMain, 10);
+                            return assetNum >= start && assetNum <= end;
+                        }
+                        return valueToMatch.toString().trim().toLowerCase() === tag.toLowerCase();
+                    });
 
-             return `
-                 <!DOCTYPE html>
-                 <html lang="th">
-                 <head>
-                     <title>รายงานยืนยันมูลค่าได้มาและค่าเสื่อมราคา</title>
-                     <style>
-                         @import url('https://fonts.googleapis.com/css2?family=Sarabun:wght@400;700&display=swap');
-                         body {
-                             font-family: 'Sarabun', sans-serif;
-                             margin: 20px;
-                         }
-                         .header {
-                             text-align: center;
-                             margin-bottom: 20px;
-                         }
-                         h1 { font-size: 18pt; margin: 0; }
-                         h2 { font-size: 16pt; margin: 0; font-weight: normal; }
-                         h3 { font-size: 14pt; margin: 5px 0 0 0; font-weight: normal; }
-                         .info-section {
-                             margin-bottom: 20px;
-                             font-size: 12pt;
-                         }
-                         .info-grid {
-                             display: grid;
-                             grid-template-columns: repeat(3, 1fr);
-                             gap: 10px;
-                         }
-                         table {
-                             width: 100%;
-                             border-collapse: collapse;
-                             font-size: 10pt;
-                         }
-                         th, td {
-                             border: 1px solid #000;
-                             padding: 5px;
-                             text-align: left;
-                         }
-                         th {
-                             background-color: #f2f2f2;
-                             font-weight: bold;
-                         }
-                         .report-footer {
-                             margin-top: 40px;
-                             display: flex;
-                             justify-content: space-between;
-                             align-items: flex-end;
-                             page-break-inside: avoid;
-                             width: 100%;
-                         }
-                         .report-source {
-                             font-size: 9pt;
-                             color: #555;
-                         }
-                         @media print {
-                             @page {
-                                 size: A4 landscape;
-                                 margin: 1cm;
-                             }
-                             body {
-                                 margin: 0;
-                             }
-                         }
-                     </style>
-                 </head>
-                 <body>
-                     <div class="header">
-                         <h1>รายงานยืนยันมูลค่าได้มาและค่าเสื่อมราคา</h1>
-                         <h2>การไฟฟ้าส่วนภูมิภาค เขต 3 (ภาคกลาง) จังหวัดนครปฐม</h2>
-                         <h3>${statusDate ? `สิ้นสุด ณ งวดบัญชี ${statusDate}` : ''}</h3>
-                     </div>
-                     <div class="info-section">
-                         ${userInfoHtml}
-                     </div>
-                     <table>
-                         <thead>
-                             <tr>
-                                 <th>เลขทรัพย์สินหลัก</th>
-                                 <th>เลขทรัพย์สินย่อย</th>
-                                 <th>คำอธิบายทรัพย์สิน</th>
-                                 <th>วันที่โอนเป็นทุน</th>
-                                 <th>มูลค่าการได้มา</th>
-                                 <th>ค่าเสื่อมสะสม</th>
-                                 <th>มูลค่าตามบัญชี</th>
-                                 <th>ศูนย์ต้นทุน ท/ส</th>
-                             </tr>
-                         </thead>
-                         <tbody>
-                             ${tableBodyContent}
-                         </tbody>
-                     </table>
-                     ${reportFooterHtml}
-                 </body>
-                 </html>
-             `;
+                    if (dataForTag.length > 0) {
+                        tableBodyHtml += `<tr><td colspan="8" style="background-color: #e0e7ff; font-weight: bold;">ผลลัพธ์สำหรับ: ${tag}</td></tr>`;
+                        tableBodyHtml += generateRows(dataForTag);
+                        const subSummary = calculateSummary(dataForTag);
+                        tableBodyHtml += generateSummaryRow(subSummary, `รวมสำหรับ ${tag}`);
+                    }
+                });
+                
+                tableBodyHtml += generateSummaryRow(grandSummary, 'รวมทั้งหมดทุกรายการ', true);
+
+            } else {
+                 tableBodyHtml += generateRows(selectedData);
+                 const summaryRow = generateSummaryRow(grandSummary, 'รวมทั้งสิ้น');
+                 tableBodyHtml = `<tbody>${tableBodyHtml}</tbody><tfoot>${summaryRow}</tfoot>`;
+            }
+            
+            let tableContent = tableBodyHtml;
+
+
+            let userInfoHtml = '';
+            if (currentSearchInfo.type === 'employee' && searchTags.length === 1) {
+                const employee = currentData[0];
+                userInfoHtml = `
+                    <div class="info-grid">
+                        <div><strong>ชื่อ-สกุล:</strong> ${employee.assetSupervisorName || '-'}</div>
+                        <div><strong>ตำแหน่ง:</strong> ${employee.position || '-'}</div>
+                        <div><strong>สังกัด:</strong> ${employee.department || '-'}</div>
+                    </div>
+                `;
+            } else {
+                userInfoHtml = `<div><strong>ผลการค้นหาสำหรับ:</strong> ${currentSearchInfo.value}</div>`;
+            }
+            
+            const printDate = new Date().toLocaleDateString('th-TH', {
+                day: 'numeric',
+                month: 'long',
+                year: 'numeric'
+            });
+
+            const reportFooterHtml = `
+                <div class="report-footer">
+                    <div class="report-source">
+                        <div>ข้อมูลจากรายงาน S_ALR_87011963</div>
+                        <div>พิมพ์รายงาน ณ วันที่ ${printDate}</div>
+                    </div>
+                </div>
+            `;
+
+            return `
+                <!DOCTYPE html>
+                <html lang="th">
+                <head>
+                    <title>รายงานยืนยันมูลค่าได้มาและค่าเสื่อมราคา</title>
+                    <style>
+                        @import url('https://fonts.googleapis.com/css2?family=Sarabun:wght@400;700&display=swap');
+                        body {
+                            font-family: 'Sarabun', sans-serif;
+                            margin: 20px;
+                        }
+                        .header {
+                            text-align: center;
+                            margin-bottom: 20px;
+                        }
+                        h1 { font-size: 18pt; margin: 0; }
+                        h2 { font-size: 16pt; margin: 0; font-weight: normal; }
+                        h3 { font-size: 14pt; margin: 5px 0 0 0; font-weight: normal; }
+                        .info-section {
+                            margin-bottom: 20px;
+                            font-size: 12pt;
+                        }
+                        .info-grid {
+                            display: grid;
+                            grid-template-columns: repeat(3, 1fr);
+                            gap: 10px;
+                        }
+                        table {
+                            width: 100%;
+                            border-collapse: collapse;
+                            font-size: 10pt;
+                        }
+                        th, td {
+                            border: 1px solid #000;
+                            padding: 5px;
+                            text-align: left;
+                        }
+                        th {
+                            background-color: #f2f2f2;
+                            font-weight: bold;
+                        }
+                        tfoot {
+                            display: table-footer-group;
+                        }
+                        .report-footer {
+                            margin-top: 40px;
+                            display: flex;
+                            justify-content: space-between;
+                            align-items: flex-end;
+                            page-break-inside: avoid;
+                            width: 100%;
+                        }
+                        .report-source {
+                            font-size: 9pt;
+                            color: #555;
+                        }
+                        @media print {
+                            @page {
+                                size: A4 landscape;
+                                margin: 1cm;
+                            }
+                            body {
+                                margin: 0;
+                            }
+                        }
+                    </style>
+                </head>
+                <body>
+                    <div class="header">
+                        <h1>รายงานยืนยันมูลค่าได้มาและค่าเสื่อมราคา</h1>
+                        <h2>การไฟฟ้าส่วนภูมิภาค เขต 3 (ภาคกลาง) จังหวัดนครปฐม</h2>
+                        <h3>${statusDate ? `สิ้นสุด ณ งวดบัญชี ${statusDate}` : ''}</h3>
+                    </div>
+                    <div class="info-section">
+                        ${userInfoHtml}
+                    </div>
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>เลขทรัพย์สินหลัก</th>
+                                <th>เลขทรัพย์สินย่อย</th>
+                                <th>คำอธิบายทรัพย์สิน</th>
+                                <th>วันที่โอนเป็นทุน</th>
+                                <th>มูลค่าการได้มา</th>
+                                <th>ค่าเสื่อมสะสม</th>
+                                <th>มูลค่าตามบัญชี</th>
+                                <th>ศูนย์ต้นทุน ท/ส</th>
+                            </tr>
+                        </thead>
+                        ${tableContent}
+                    </table>
+                    ${reportFooterHtml}
+                </body>
+                </html>
+            `;
         }
 
         function previewReport() {
@@ -1136,54 +1240,6 @@
             }
         }
 
-        async function exportToPDF() {
-            const reportHtml = generateReportHTML();
-            if (!reportHtml) return;
-
-            showToast('กำลังสร้างไฟล์ PDF...');
-
-            const printContainer = document.createElement('div');
-            printContainer.innerHTML = reportHtml;
-            printContainer.style.position = 'absolute';
-            printContainer.style.left = '-9999px';
-            printContainer.style.width = '1122px'; // A4 landscape width in px for rendering
-            document.body.appendChild(printContainer);
-
-            const canvas = await html2canvas(printContainer.querySelector('body'), {
-                scale: 2,
-                useCORS: true
-            });
-
-            document.body.removeChild(printContainer);
-
-            const imgData = canvas.toDataURL('image/png');
-            const { jsPDF } = window.jspdf;
-            const pdf = new jsPDF('l', 'mm', 'a4');
-            const pdfWidth = pdf.internal.pageSize.getWidth();
-            const pdfHeight = pdf.internal.pageSize.getHeight();
-            const imgWidth = canvas.width;
-            const imgHeight = canvas.height;
-            const ratio = imgWidth / imgHeight;
-            const canvasWidth = pdfWidth;
-            const canvasHeight = canvasWidth / ratio;
-
-            let heightLeft = canvasHeight;
-            let position = 0;
-
-            pdf.addImage(imgData, 'PNG', 0, position, canvasWidth, canvasHeight);
-            heightLeft -= pdfHeight;
-
-            while (heightLeft > 0) {
-                position = heightLeft - canvasHeight;
-                pdf.addPage();
-                pdf.addImage(imgData, 'PNG', 0, position, canvasWidth, canvasHeight);
-                heightLeft -= pdfHeight;
-            }
-            
-            const fileName = `Report Asset - ${searchTags.join(',')}.pdf`;
-            pdf.save(fileName);
-        }
-
         function exportToExcel() {
             const selectedData = getSelectedData();
             if (selectedData.length === 0) {
@@ -1201,6 +1257,7 @@
                 'มูลค่าตามบัญชี': parseCurrency(item.bookValue),
                 'ชื่อผู้ดูแล ท/ส': item.assetSupervisorName || '-',
                 'ศูนย์ต้นทุน ท/ส': item.assetCostCenter || '-',
+                'สถานะ': item.status || '-',
                 'ชื่อผู้ครอบครอง(เบื้องต้น)': item.employeeName || '-',
                 'ตำแหน่ง': item.position || '-',
                 'สังกัด': item.department || '-'
@@ -1217,6 +1274,7 @@
                 'มูลค่าตามบัญชี': summary.totalBookValue,
                 'ชื่อผู้ดูแล ท/ส': '',
                 'ศูนย์ต้นทุน ท/ส': '',
+                'สถานะ': '',
                 'ชื่อผู้ครอบครอง(เบื้องต้น)': '',
                 'ตำแหน่ง': '',
                 'สังกัด': ''
@@ -1228,7 +1286,7 @@
             ws['!cols'] = [
                 { wch: 20 }, { wch: 20 }, { wch: 50 }, { wch: 20 },
                 { wch: 20 }, { wch: 20 }, { wch: 20 }, { wch: 30 }, 
-                { wch: 20 }, { wch: 30 }, { wch: 30 }, { wch: 30 }
+                { wch: 20 }, { wch: 20 }, { wch: 30 }, { wch: 30 }, { wch: 30 }
             ];
 
             const wb = XLSX.utils.book_new();
@@ -1238,3 +1296,4 @@
     </script>
 </body>
 </html>
+
