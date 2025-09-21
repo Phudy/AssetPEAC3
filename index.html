@@ -137,6 +137,28 @@
             color: white;
             border-color: #4f46e5;
         }
+        .page-link {
+            padding: 0.5rem 0.75rem;
+            border: 1px solid #d1d5db;
+            color: #374151;
+            background-color: white;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+        .page-link:hover {
+            background-color: #f3f4f6;
+        }
+        .page-link.active {
+            z-index: 10;
+            color: white;
+            background-color: #4f46e5;
+            border-color: #4f46e5;
+        }
+        .page-link.disabled {
+            color: #9ca3af;
+            pointer-events: none;
+            background-color: #f9fafb;
+        }
     </style>
 </head>
 <body>
@@ -176,12 +198,17 @@
                     
                     <div class="relative">
                         <label for="searchInput" id="searchLabel" class="block text-gray-600 font-medium mb-2">รหัสทรัพย์สิน:</label>
-                        <div id="tagContainer" class="tag-container">
-                             <input type="text" 
-                                    id="searchInput" 
-                                    class="flex-grow p-2 border-0 focus:outline-none focus:ring-0" 
-                                    placeholder="กรอกข้อมูล, วางข้อมูลจาก Excel, หรือกรอกเป็นช่วง (เช่น 100-105) แล้วกด Enter"
-                                    autocomplete="off">
+                        <div class="flex items-start gap-2">
+                            <div id="tagContainer" class="tag-container flex-grow">
+                                <input type="text" 
+                                        id="searchInput" 
+                                        class="flex-grow p-2 border-0 focus:outline-none focus:ring-0" 
+                                        placeholder="พิมพ์รหัส 9 หลัก (เดี่ยว/ช่วง) เพื่อเพิ่มอัตโนมัติ, หรือวางจาก Excel"
+                                        autocomplete="off">
+                            </div>
+                            <button type="button" id="clearAllTagsBtn" title="ลบเงื่อนไขทั้งหมด" class="hidden mt-2 p-2 text-gray-400 hover:text-red-500 transition-colors">
+                                <i class="fas fa-times-circle fa-lg"></i>
+                            </button>
                         </div>
                         <div id="suggestionsContainer" class="autocomplete-suggestions hidden"></div>
                     </div>
@@ -258,12 +285,26 @@
                     </div>
                 </div>
                 
-                <div class="mb-4 relative">
-                    <label for="multifunctionSearchInput" class="sr-only">กรองข้อมูล</label>
-                    <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                        <i class="fas fa-filter text-gray-400"></i>
+                <div class="mb-4 grid grid-cols-1 md:grid-cols-2 gap-4 items-center">
+                    <div id="assetClassFilterContainer" class="relative">
+                         <button id="assetClassFilterButton" type="button" class="w-full text-left pl-10 pr-10 py-2 border-2 border-gray-200 rounded-lg focus:outline-none focus:border-indigo-500 bg-white flex items-center justify-between">
+                            <span class="truncate">กรองตามคลาสทั้งหมด</span>
+                            <i class="fas fa-chevron-down text-gray-400"></i>
+                         </button>
+                         <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                            <i class="fas fa-layer-group text-gray-400"></i>
+                         </div>
+                         <div id="assetClassFilterOptions" class="hidden absolute z-10 mt-1 w-full bg-white rounded-md shadow-lg max-h-60 overflow-auto">
+                            <!-- Options will be populated here -->
+                         </div>
                     </div>
-                    <input type="text" id="multifunctionSearchInput" class="w-full pl-10 pr-4 py-2 border-2 border-gray-200 rounded-lg focus:outline-none focus:border-indigo-500" placeholder="กรองข้อมูลในตารางนี้...">
+                    <div class="relative">
+                        <label for="multifunctionSearchInput" class="sr-only">กรองข้อมูล</label>
+                        <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                            <i class="fas fa-filter text-gray-400"></i>
+                        </div>
+                        <input type="text" id="multifunctionSearchInput" class="w-full pl-10 pr-4 py-2 border-2 border-gray-200 rounded-lg focus:outline-none focus:border-indigo-500" placeholder="กรองข้อมูลในตารางนี้...">
+                    </div>
                 </div>
 
                 <div class="overflow-x-auto rounded-lg shadow-md">
@@ -289,6 +330,7 @@
                         </tfoot>
                     </table>
                 </div>
+                 <div id="paginationContainer" class="mt-6 flex justify-center items-center space-x-2 text-sm"></div>
             </div>
         </div>
 
@@ -342,17 +384,23 @@
             EMPLOYEE_NAME: 13,     // Column N
             POSITION: 14,          // Column O
             DEPARTMENT: 15,        // Column P
-            STATUS: 19             // Column T
+            STATUS: 19,            // Column T
+            ASSET_CLASS_CODE: 20,  // Column U
+            ASSET_CLASS_NAME: 21   // Column V
         };
 
         // Global variables
         let currentData = [];
+        let currentDisplayData = [];
+        let selectedIds = new Set();
         let currentSearchInfo = {};
         let allData = [];
         let statusDate = '';
         let uniqueCostCenterNames = [];
         let searchTags = [];
         let currentSort = { column: null, direction: 'asc' };
+        let currentPage = 1;
+        const rowsPerPage = 20;
 
         // ========================================
         // Google Sheets API Functions
@@ -398,7 +446,9 @@
                         assetSupervisorName: supervisorName || '',
                         position: row[COLUMNS.POSITION] || '',
                         department: row[COLUMNS.DEPARTMENT] || '',
-                        status: row[COLUMNS.STATUS] || ''
+                        status: row[COLUMNS.STATUS] || '',
+                        assetClassCode: row[COLUMNS.ASSET_CLASS_CODE] || '',
+                        assetClassName: row[COLUMNS.ASSET_CLASS_NAME] || ''
                     };
                 }).filter(row => 
                     row.assetMain || row.employeeCode || row.departmentCode
@@ -423,6 +473,10 @@
         
         function searchByMultipleCriteria(tags, type) {
             if (tags.length === 0) return [];
+
+            if (type === 'businessType' && tags.some(tag => tag.toLowerCase() === 'all')) {
+                return [...allData];
+            }
             
             return allData.filter(item => {
                 return tags.some(tag => {
@@ -435,11 +489,17 @@
                         return !isNaN(start) && !isNaN(end) && !isNaN(assetValue) && assetValue >= start && assetValue <= end;
                     } else {
                         let valueToMatch = '';
+                        let isContainsSearch = false;
+                        
                         if (type === 'employee') valueToMatch = item.employeeCode.toString().trim().toLowerCase();
-                        else if (type === 'costCenterName') valueToMatch = item.assetCostCenter.toString().trim().toLowerCase();
+                        else if (type === 'costCenterName') {
+                            valueToMatch = item.assetCostCenter.toString().trim().toLowerCase();
+                            isContainsSearch = true; 
+                        }
                         else if (type === 'businessType') valueToMatch = item.businessType.toString().trim().toLowerCase();
                         else if (type === 'assetNumber') valueToMatch = item.assetMain.toString().trim().toLowerCase();
-                        return valueToMatch === lowerCaseTag;
+                        
+                        return isContainsSearch ? valueToMatch.includes(lowerCaseTag) : valueToMatch === lowerCaseTag;
                     }
                 });
             });
@@ -461,10 +521,10 @@
                     searchInput.placeholder = 'พิมพ์รหัสพนักงาน 6 หลักเพื่อเพิ่มอัตโนมัติ';
                 } else if (this.value === 'costCenterName') {
                     searchLabel.textContent = 'ชื่อศูนย์ต้นทุน:';
-                    searchInput.placeholder = 'พิมพ์เพื่อค้นหาและเลือก';
+                    searchInput.placeholder = 'พิมพ์ "กบฟ." เพื่อเพิ่มทั้งหมด, หรือพิมพ์เพื่อค้นหา';
                 } else if (this.value === 'businessType') {
                     searchLabel.textContent = 'ประเภทธุรกิจ:';
-                    searchInput.placeholder = 'พิมพ์รหัส 4 หลักเพื่อเพิ่มอัตโนมัติ';
+                    searchInput.placeholder = 'พิมพ์รหัส 4 หลัก หรือ "All" เพื่อเพิ่มทั้งหมด';
                 } else { // assetNumber
                     searchLabel.textContent = 'รหัสทรัพย์สิน:';
                     searchInput.placeholder = 'พิมพ์รหัส 9 หลัก (เดี่ยว/ช่วง) เพื่อเพิ่มอัตโนมัติ, หรือวางจาก Excel';
@@ -529,7 +589,8 @@
                     showNoResults();
                     return;
                 }
-
+                
+                selectedIds.clear(); // Clear selections from previous search
                 currentData = filteredData;
                 currentSearchInfo = {
                     type: searchType,
@@ -588,6 +649,17 @@
             const statusDateDisplay = document.getElementById('statusDateDisplay');
 
             statusDateDisplay.textContent = statusDate ? `สิ้นสุด ณ งวดบัญชี ${statusDate}` : '';
+            
+            if (searchType === 'businessType' && searchTags.includes('All')) {
+                currentSort = { column: 'businessType', direction: 'asc' };
+                data.sort((a, b) => {
+                    const valA = a.businessType || '';
+                    const valB = b.businessType || '';
+                    return valA.localeCompare(valB, 'th');
+                });
+            } else {
+                currentSort = { column: null, direction: 'asc' };
+            }
 
             if (searchType === 'employee' && searchTags.length === 1) {
                 const employee = data.length > 0 ? data[0] : {};
@@ -621,19 +693,10 @@
                 disposalAlertContainer.classList.add('hidden');
             }
             
-            renderTable(data);
+            currentData = [...data]; // Update currentData to the initial search result
+            
+            initializeFiltersAndDisplay();
 
-            const selectAllCheckbox = document.getElementById('selectAllCheckbox');
-            selectAllCheckbox.checked = false; 
-            selectAllCheckbox.addEventListener('change', (event) => {
-                document.querySelectorAll('.row-checkbox').forEach(checkbox => {
-                    checkbox.checked = event.target.checked;
-                });
-            });
-            
-            const multifunctionSearchInput = document.getElementById('multifunctionSearchInput');
-            multifunctionSearchInput.value = '';
-            
             document.querySelectorAll('#resultsTable thead th.sortable').forEach(th => {
                 th.addEventListener('click', () => {
                     const column = th.dataset.sort;
@@ -643,14 +706,30 @@
                         currentSort.column = column;
                         currentSort.direction = 'asc';
                     }
-                    sortAndRenderTable();
+                    sortAndRenderPaginatedView();
                 });
             });
+        }
 
-            // Initialize Quick Filters
+        function initializeFiltersAndDisplay() {
+            populateAssetClassFilter();
             initializeQuickFilters();
+            applyAllFilters();
+            updateSortIcons();
         }
         
+        function renderPaginatedView() {
+            const totalPages = Math.ceil(currentDisplayData.length / rowsPerPage);
+            const start = (currentPage - 1) * rowsPerPage;
+            const end = start + rowsPerPage;
+            const pageData = currentDisplayData.slice(start, end);
+
+            renderTable(pageData);
+            calculateAndDisplaySummary(currentDisplayData);
+            renderPaginationControls(totalPages);
+            updateSelectAllCheckboxState();
+        }
+
         function renderTable(dataToRender) {
             const resultsBody = document.getElementById('resultsBody');
             resultsBody.innerHTML = '';
@@ -665,8 +744,8 @@
                 }
 
                 row.innerHTML = `
-                    <td class="p-4"><input type="checkbox" class="row-checkbox w-4 h-4 accent-indigo-600" data-id="${item.id}"></td>
-                    <td class="px-6 py-4">${item.assetMain || '-'}</td>
+                    <td class="p-4"><input type="checkbox" class="row-checkbox w-4 h-4 accent-indigo-600" data-id="${item.id}" ${selectedIds.has(item.id) ? 'checked' : ''}></td>
+                    <td class="px-6 py-4" title="${item.assetClassName || 'ไม่มีข้อมูลคลาส'}">${item.assetMain || '-'}</td>
                     <td class="px-6 py-4">${item.assetSub || '-'}</td>
                     <td class="px-6 py-4 max-w-sm truncate" title="${item.assetDescription || ''}">${item.assetDescription || '-'}</td>
                     <td class="px-6 py-4">${item.transferDate || '-'}</td>
@@ -679,7 +758,97 @@
                 `;
             });
             
-            calculateAndDisplaySummary(dataToRender);
+            // Add event listeners to the new checkboxes
+            document.querySelectorAll('.row-checkbox').forEach(checkbox => {
+                checkbox.addEventListener('change', (e) => {
+                    const id = parseInt(e.target.dataset.id);
+                    if (e.target.checked) {
+                        selectedIds.add(id);
+                    } else {
+                        selectedIds.delete(id);
+                    }
+                    updateSelectAllCheckboxState();
+                });
+            });
+            
+            const selectAllCheckbox = document.getElementById('selectAllCheckbox');
+            selectAllCheckbox.removeEventListener('change', handleSelectAll);
+            selectAllCheckbox.addEventListener('change', handleSelectAll);
+        }
+
+        function handleSelectAll(event) {
+            const isChecked = event.target.checked;
+            const dataToSelect = currentDisplayData; // Select all items in the current filtered/sorted view
+            
+            dataToSelect.forEach(item => {
+                if (isChecked) {
+                    selectedIds.add(item.id);
+                } else {
+                    selectedIds.delete(item.id);
+                }
+            });
+            renderPaginatedView(); // Re-render to show checkbox changes
+        }
+
+        function updateSelectAllCheckboxState() {
+             const selectAllCheckbox = document.getElementById('selectAllCheckbox');
+             const allVisibleIds = new Set(currentDisplayData.map(item => item.id));
+             const allVisibleSelected = [...allVisibleIds].every(id => selectedIds.has(id));
+             selectAllCheckbox.checked = allVisibleSelected && currentDisplayData.length > 0;
+        }
+
+
+        function renderPaginationControls(totalPages) {
+            const container = document.getElementById('paginationContainer');
+            container.innerHTML = '';
+
+            if (totalPages <= 1) return;
+
+            let paginationHtml = '';
+
+            paginationHtml += `<button class="page-link rounded-l-lg ${currentPage === 1 ? 'disabled' : ''}" data-page="${currentPage - 1}">&laquo;</button>`;
+
+            let startPage = Math.max(1, currentPage - 2);
+            let endPage = Math.min(totalPages, currentPage + 2);
+
+            if (currentPage <= 3) {
+                endPage = Math.min(5, totalPages);
+            }
+            if (currentPage > totalPages - 3) {
+                startPage = Math.max(1, totalPages - 4);
+            }
+            
+            if (startPage > 1) {
+                 paginationHtml += `<button class="page-link" data-page="1">1</button>`;
+                 if (startPage > 2) {
+                    paginationHtml += `<span class="page-link disabled">...</span>`;
+                 }
+            }
+
+            for (let i = startPage; i <= endPage; i++) {
+                paginationHtml += `<button class="page-link ${i === currentPage ? 'active' : ''}" data-page="${i}">${i}</button>`;
+            }
+            
+            if (endPage < totalPages) {
+                if (endPage < totalPages - 1) {
+                     paginationHtml += `<span class="page-link disabled">...</span>`;
+                }
+                paginationHtml += `<button class="page-link" data-page="${totalPages}">${totalPages}</button>`;
+            }
+
+            paginationHtml += `<button class="page-link rounded-r-lg ${currentPage === totalPages ? 'disabled' : ''}" data-page="${currentPage + 1}">&raquo;</button>`;
+
+            container.innerHTML = paginationHtml;
+
+            container.querySelectorAll('.page-link').forEach(button => {
+                button.addEventListener('click', (e) => {
+                    const newPage = parseInt(e.target.dataset.page);
+                    if (newPage && newPage !== currentPage) {
+                        currentPage = newPage;
+                        renderPaginatedView();
+                    }
+                });
+            });
         }
 
         function formatNumber(value) {
@@ -702,9 +871,8 @@
         }
 
         function getSelectedData() {
-            const selectedIds = Array.from(document.querySelectorAll('.row-checkbox:checked'))
-                                     .map(cb => parseInt(cb.dataset.id));
-            return currentData.filter(item => selectedIds.includes(item.id));
+            // This function now gets data from the global Set of selected IDs
+            return allData.filter(item => selectedIds.has(item.id));
         }
         
         const parseCurrency = (str) => parseFloat(String(str).replace(/,/g, '')) || 0;
@@ -740,6 +908,7 @@
         const searchInput = document.getElementById('searchInput');
         const suggestionsContainer = document.getElementById('suggestionsContainer');
         const tagContainer = document.getElementById('tagContainer');
+        const clearAllTagsBtn = document.getElementById('clearAllTagsBtn');
 
         function renderTags() {
             const tags = tagContainer.querySelectorAll('.tag');
@@ -754,6 +923,12 @@
                 `;
                 tagContainer.insertBefore(tagElement, searchInput);
             });
+            
+            if (searchTags.length > 0) {
+                clearAllTagsBtn.classList.remove('hidden');
+            } else {
+                clearAllTagsBtn.classList.add('hidden');
+            }
         }
 
         function addTag(value) {
@@ -766,6 +941,11 @@
             suggestionsContainer.classList.add('hidden');
         }
 
+        clearAllTagsBtn.addEventListener('click', () => {
+            searchTags = [];
+            renderTags();
+        });
+        
         tagContainer.addEventListener('click', (e) => {
             if (e.target.classList.contains('tag-remove')) {
                 const valueToRemove = e.target.dataset.value;
@@ -789,8 +969,20 @@
             if (e.key === 'Enter') {
                 e.preventDefault();
                 const searchType = document.querySelector('input[name="searchType"]:checked').value;
-                if (searchType !== 'costCenterName') {
-                    addTag(searchInput.value);
+                const inputValue = searchInput.value.trim();
+
+                if (!inputValue) return;
+
+                if (searchType === 'costCenterName' && inputValue.endsWith('*')) {
+                    const prefix = inputValue.slice(0, -1).toLowerCase();
+                    if (prefix) {
+                        const matchingCenters = uniqueCostCenterNames.filter(name => name.toLowerCase().startsWith(prefix));
+                        matchingCenters.forEach(addTag);
+                    }
+                    searchInput.value = '';
+                    suggestionsContainer.classList.add('hidden');
+                } else {
+                    addTag(inputValue);
                 }
             }
         });
@@ -798,6 +990,7 @@
         searchInput.addEventListener('input', () => {
             const searchType = document.querySelector('input[name="searchType"]:checked').value;
             const inputValue = searchInput.value;
+            const lowerInputValue = inputValue.toLowerCase();
 
             if (searchType === 'employee' && inputValue.length === 6) {
                 addTag(inputValue);
@@ -815,28 +1008,48 @@
                 }
             }
 
-            if (searchType === 'businessType' && inputValue.length === 4) {
-                addTag(inputValue);
-                return;
+            if (searchType === 'businessType') {
+                if (lowerInputValue === 'all') {
+                    addTag('All');
+                    return;
+                }
+                if (inputValue.length === 4) {
+                    addTag(inputValue);
+                    return;
+                }
             }
 
-            if (searchType !== 'costCenterName') {
-                suggestionsContainer.classList.add('hidden');
-                return;
-            }
+            if (searchType === 'costCenterName') {
+                 if (lowerInputValue === 'กบฟ.') {
+                    const prefix = 'กบฟ.'.toLowerCase();
+                    const matchingCenters = uniqueCostCenterNames.filter(name => name.toLowerCase().startsWith(prefix));
+                    if(matchingCenters.length > 0) {
+                        matchingCenters.forEach(addTag);
+                        searchInput.value = '';
+                    }
+                    suggestionsContainer.classList.add('hidden');
+                    return;
+                }
+                
+                if (inputValue.includes('*')) {
+                    suggestionsContainer.classList.add('hidden');
+                    return;
+                }
+                if (inputValue.length < 1) {
+                    suggestionsContainer.classList.add('hidden');
+                    return;
+                }
 
-            if (inputValue.length < 1) {
-                suggestionsContainer.classList.add('hidden');
-                return;
-            }
-
-            const suggestions = uniqueCostCenterNames.filter(name => name.toLowerCase().includes(inputValue));
-            
-            if (suggestions.length > 0) {
-                suggestionsContainer.innerHTML = suggestions
-                    .map(s => `<div class="autocomplete-suggestion">${s}</div>`)
-                    .join('');
-                suggestionsContainer.classList.remove('hidden');
+                const suggestions = uniqueCostCenterNames.filter(name => name.toLowerCase().includes(lowerInputValue));
+                
+                if (suggestions.length > 0) {
+                    suggestionsContainer.innerHTML = suggestions
+                        .map(s => `<div class="autocomplete-suggestion">${s}</div>`)
+                        .join('');
+                    suggestionsContainer.classList.remove('hidden');
+                } else {
+                    suggestionsContainer.classList.add('hidden');
+                }
             } else {
                 suggestionsContainer.classList.add('hidden');
             }
@@ -857,13 +1070,13 @@
         // ========================================
         // Sorting Logic
         // ========================================
-        function sortAndRenderTable() {
+        function sortAndRenderPaginatedView() {
             if (!currentSort.column) {
-                 renderTable(currentData); // Render unsorted if no column selected
-                 return;
+                renderPaginatedView();
+                return;
             };
             
-            const sortedData = [...currentData].sort((a, b) => {
+            currentDisplayData.sort((a, b) => {
                 let valA = a[currentSort.column];
                 let valB = b[currentSort.column];
                 
@@ -885,7 +1098,8 @@
                 return 0;
             });
             
-            renderTable(sortedData);
+            currentPage = 1;
+            renderPaginatedView();
             updateSortIcons();
         }
 
@@ -912,52 +1126,60 @@
         // ========================================
         // Filter Logic
         // ========================================
-        function initializeQuickFilters() {
-            const filterButtons = document.querySelectorAll('.quick-filter-btn');
-            const multifunctionInput = document.getElementById('multifunctionSearchInput');
+        let activeQuickFilterFn = () => true;
+        let activeClassFilterValue = 'all';
 
-            const applyFilter = (filterFn) => {
-                const filtered = currentData.filter(filterFn);
-                renderTable(filtered);
-                multifunctionInput.value = '';
-            };
+        function populateAssetClassFilter() {
+            const optionsContainer = document.getElementById('assetClassFilterOptions');
+            const buttonLabel = document.querySelector('#assetClassFilterButton span');
+            optionsContainer.innerHTML = ''; // Clear previous options
+            buttonLabel.textContent = 'กรองตามคลาสทั้งหมด';
+            
+            const allOption = document.createElement('a');
+            allOption.href = '#';
+            allOption.className = 'block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100';
+            allOption.dataset.value = 'all';
+            allOption.textContent = 'กรองตามคลาสทั้งหมด';
+            optionsContainer.appendChild(allOption);
 
-            const setActiveButton = (activeBtn) => {
-                filterButtons.forEach(btn => btn.classList.remove('active'));
-                activeBtn.classList.add('active');
-            };
-
-            document.getElementById('filterBtnAll').addEventListener('click', (e) => {
-                renderTable(currentData);
-                setActiveButton(e.target);
-            });
-
-            document.getElementById('filterBtnBookValue').addEventListener('click', (e) => {
-                applyFilter(item => formatNumber(item.bookValue) === '1.00');
-                setActiveButton(e.target);
-            });
-
-            document.getElementById('filterBtnDamaged').addEventListener('click', (e) => {
-                applyFilter(item => item.status === 'ชำรุด' || item.status === 'สภาพดีแต่ไม่ได้ใช้งาน');
-                setActiveButton(e.target);
-            });
-
-            document.getElementById('filterBtnDisposed').addEventListener('click', (e) => {
-                applyFilter(item => item.status === 'จำหน่าย(ขาย)' || item.status === 'จำหน่าย(ทำลาย)');
-                setActiveButton(e.target);
-            });
-
-            multifunctionInput.addEventListener('input', () => {
-                filterButtons.forEach(btn => btn.classList.remove('active'));
-                const searchTerm = multifunctionInput.value.toLowerCase().trim();
-                
-                if (searchTerm === '') {
-                    renderTable(currentData);
-                    document.getElementById('filterBtnAll').classList.add('active');
-                    return;
+            const classes = currentData.reduce((acc, item) => {
+                if (item.assetClassCode && item.assetClassName) {
+                    acc.set(item.assetClassCode, item.assetClassName);
                 }
+                return acc;
+            }, new Map());
+            
+            const sortedClasses = [...classes.entries()].sort((a, b) => {
+                const numA = parseInt(a[0], 10);
+                const numB = parseInt(b[0], 10);
+                if (!isNaN(numA) && !isNaN(numB)) {
+                    return numA - numB;
+                }
+                return a[0].localeCompare(b[0]);
+            });
 
-                const filteredDisplayData = currentData.filter(item => {
+            sortedClasses.forEach(([code, name]) => {
+                const option = document.createElement('a');
+                option.href = '#';
+                option.className = 'block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100';
+                option.dataset.value = code;
+                option.textContent = `${code} - ${name}`;
+                optionsContainer.appendChild(option);
+            });
+        }
+        
+        function applyAllFilters() {
+             let filtered = [...currentData];
+             
+             filtered = filtered.filter(activeQuickFilterFn);
+             
+             if(activeClassFilterValue !== 'all') {
+                filtered = filtered.filter(item => item.assetClassCode === activeClassFilterValue);
+             }
+
+             const searchTerm = document.getElementById('multifunctionSearchInput').value.toLowerCase().trim();
+             if (searchTerm) {
+                filtered = filtered.filter(item => {
                     if (searchTerm === '1.00') {
                         return formatNumber(item.bookValue) === '1.00';
                     }
@@ -965,10 +1187,68 @@
                         String(val).toLowerCase().includes(searchTerm)
                     );
                 });
-                renderTable(filteredDisplayData);
+             }
+             
+             currentDisplayData = filtered;
+             currentPage = 1;
+             renderPaginatedView();
+        }
+
+        function initializeQuickFilters() {
+            const filterButtons = document.querySelectorAll('.quick-filter-btn');
+            const classFilterButton = document.getElementById('assetClassFilterButton');
+            const classFilterOptions = document.getElementById('assetClassFilterOptions');
+            const multifunctionInput = document.getElementById('multifunctionSearchInput');
+
+            const setActiveButton = (activeBtn) => {
+                filterButtons.forEach(btn => btn.classList.remove('active'));
+                if(activeBtn) activeBtn.classList.add('active');
+            };
+
+            filterButtons.forEach(button => {
+                button.addEventListener('click', (e) => {
+                    setActiveButton(e.target);
+                    const id = e.target.id;
+                    if(id === 'filterBtnAll') activeQuickFilterFn = () => true;
+                    else if (id === 'filterBtnBookValue') activeQuickFilterFn = item => formatNumber(item.bookValue) === '1.00';
+                    else if (id === 'filterBtnDamaged') activeQuickFilterFn = item => item.status === 'ชำรุด' || item.status === 'สภาพดีแต่ไม่ได้ใช้งาน';
+                    else if (id === 'filterBtnDisposed') activeQuickFilterFn = item => item.status === 'จำหน่าย(ขาย)' || item.status === 'จำหน่าย(ทำลาย)';
+                    applyAllFilters();
+                });
             });
-             // Set initial active state
-            document.getElementById('filterBtnAll').classList.add('active');
+
+            classFilterButton.addEventListener('click', () => {
+                classFilterOptions.classList.toggle('hidden');
+            });
+
+            classFilterOptions.addEventListener('click', (e) => {
+                e.preventDefault();
+                if (e.target.tagName === 'A') {
+                    activeClassFilterValue = e.target.dataset.value;
+                    document.querySelector('#assetClassFilterButton span').textContent = e.target.textContent;
+                    classFilterOptions.classList.add('hidden');
+                    applyAllFilters();
+                }
+            });
+
+            document.addEventListener('click', (e) => {
+                if (!document.getElementById('assetClassFilterContainer').contains(e.target)) {
+                    classFilterOptions.classList.add('hidden');
+                }
+            });
+
+            multifunctionInput.addEventListener('input', () => {
+                 setActiveButton(null); // Deselect quick filter when using multifunction search
+                 activeQuickFilterFn = () => true; // Reset quick filter function
+                 applyAllFilters();
+            });
+            
+            // Reset filters to default state on initialization
+            setActiveButton(document.getElementById('filterBtnAll'));
+            document.querySelector('#assetClassFilterButton span').textContent = 'กรองตามคลาสทั้งหมด';
+            multifunctionInput.value = '';
+            activeQuickFilterFn = () => true;
+            activeClassFilterValue = 'all';
         }
 
         // ========================================
@@ -981,6 +1261,12 @@
                 showToast('กรุณาเลือกรายการที่ต้องการ');
                 return null;
             }
+            
+            selectedData.sort((a, b) => {
+                const valA = a.assetMain.localeCompare(b.assetMain, undefined, {numeric: true});
+                if (valA !== 0) return valA;
+                return a.assetSub.localeCompare(b.assetSub, undefined, {numeric: true});
+            });
 
             const searchType = document.querySelector('input[name="searchType"]:checked').value;
             let tableBodyHtml = '';
@@ -1033,7 +1319,7 @@
                 
                 tableBodyHtml += generateSummaryRow(grandSummary, 'รวมทั้งหมดทุกรายการ', true);
 
-            } else if (searchType === 'assetNumber' && searchTags.length > 1) {
+            } else if ((searchType === 'assetNumber' && searchTags.length > 1)) {
                 const groupedData = selectedData.reduce((acc, item) => {
                     const key = item.assetCostCenter || 'ไม่ระบุ';
                     if (!acc[key]) acc[key] = [];
@@ -1079,9 +1365,9 @@
                 tableBodyHtml += generateSummaryRow(grandSummary, 'รวมทั้งหมดทุกรายการ', true);
 
             } else {
-                 tableBodyHtml += generateRows(selectedData);
+                 let rows = generateRows(selectedData);
                  const summaryRow = generateSummaryRow(grandSummary, 'รวมทั้งสิ้น');
-                 tableBodyHtml = `<tbody>${tableBodyHtml}</tbody><tfoot>${summaryRow}</tfoot>`;
+                 tableBodyHtml = `<tbody>${rows}</tbody><tfoot>${summaryRow}</tfoot>`;
             }
             
             let tableContent = tableBodyHtml;
@@ -1089,14 +1375,19 @@
 
             let userInfoHtml = '';
             if (currentSearchInfo.type === 'employee' && searchTags.length === 1) {
-                const employee = currentData[0];
-                userInfoHtml = `
-                    <div class="info-grid">
-                        <div><strong>ชื่อ-สกุล:</strong> ${employee.assetSupervisorName || '-'}</div>
-                        <div><strong>ตำแหน่ง:</strong> ${employee.position || '-'}</div>
-                        <div><strong>สังกัด:</strong> ${employee.department || '-'}</div>
-                    </div>
-                `;
+                const employee = currentData.find(item => item.employeeCode.toString().trim().toLowerCase() === searchTags[0].toLowerCase());
+                if (employee) {
+                    userInfoHtml = `
+                        <div class="info-grid">
+                            <div><strong>ชื่อ-สกุล:</strong> ${employee.assetSupervisorName || '-'}</div>
+                            <div><strong>ตำแหน่ง:</strong> ${employee.position || '-'}</div>
+                            <div><strong>สังกัด:</strong> ${employee.department || '-'}</div>
+                        </div>
+                    `;
+                } else {
+                     userInfoHtml = `<div><strong>ผลการค้นหาสำหรับ:</strong> ${currentSearchInfo.value}</div>`;
+                }
+
             } else {
                 userInfoHtml = `<div><strong>ผลการค้นหาสำหรับ:</strong> ${currentSearchInfo.value}</div>`;
             }
@@ -1157,8 +1448,11 @@
                             background-color: #f2f2f2;
                             font-weight: bold;
                         }
+                        tbody tr:last-child {
+                            page-break-after: auto;
+                        }
                         tfoot {
-                            display: table-footer-group;
+                           display: table-footer-group;
                         }
                         .report-footer {
                             margin-top: 40px;
@@ -1179,6 +1473,9 @@
                             }
                             body {
                                 margin: 0;
+                            }
+                            tfoot {
+                                display: table-footer-group;
                             }
                         }
                     </style>
@@ -1236,7 +1533,7 @@
                  setTimeout(() => {
                      printWindow.print();
                      printWindow.close();
-                 }, 250);
+                 }, 500);
             }
         }
 
@@ -1248,7 +1545,7 @@
             }
 
             const excelData = selectedData.map(item => ({
-                'เลขทรัพย์สินหลัก': item.assetMain || '-',
+                'รหัสทรัพย์สิน': item.assetMain || '-',
                 'เลขทรัพย์สินย่อย': item.assetSub || '-',
                 'คำอธิบายทรัพย์สิน': item.assetDescription || '-',
                 'วันที่โอนเป็นทุน': item.transferDate || '-',
@@ -1265,7 +1562,7 @@
             
             const summary = calculateSummary(selectedData);
             const summaryRow = {
-                'เลขทรัพย์สินหลัก': `รวมทั้งสิ้น ${summary.count} รายการ`,
+                'รหัสทรัพย์สิน': `รวมทั้งสิ้น ${summary.count} รายการ`,
                 'เลขทรัพย์สินย่อย': '',
                 'คำอธิบายทรัพย์สิน': '',
                 'วันที่โอนเป็นทุน': '',
