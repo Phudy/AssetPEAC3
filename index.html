@@ -528,7 +528,7 @@
                 
                 if (this.value === 'employee') {
                     searchLabel.textContent = 'รหัสพนักงาน:';
-                    searchInput.placeholder = 'พิมพ์รหัสพนักงาน 6 หลักเพื่อเพิ่มอัตโนมัติ';
+                    searchInput.placeholder = 'พิมพ์รหัส 6 หรือ 7 หลัก';
                 } else if (this.value === 'costCenterName') {
                     searchLabel.textContent = 'ชื่อศูนย์ต้นทุน:';
                     searchInput.placeholder = 'พิมพ์ "กบฟ." เพื่อเพิ่มทั้งหมด, หรือพิมพ์เพื่อค้นหา';
@@ -919,6 +919,7 @@
         const suggestionsContainer = document.getElementById('suggestionsContainer');
         const tagContainer = document.getElementById('tagContainer');
         const clearAllTagsBtn = document.getElementById('clearAllTagsBtn');
+        let typingTimer;
 
         function renderTags() {
             const tags = tagContainer.querySelectorAll('.tag');
@@ -1001,9 +1002,17 @@
             const searchType = document.querySelector('input[name="searchType"]:checked').value;
             const inputValue = searchInput.value;
             const lowerInputValue = inputValue.toLowerCase();
+            
+            clearTimeout(typingTimer);
 
-            if (searchType === 'employee' && inputValue.length === 6) {
-                addTag(inputValue);
+            if (searchType === 'employee') {
+                if (inputValue.length === 6) {
+                    typingTimer = setTimeout(() => {
+                        addTag(inputValue);
+                    }, 500); // 500ms delay
+                } else if (inputValue.length === 7) {
+                    addTag(inputValue);
+                }
                 return;
             }
 
