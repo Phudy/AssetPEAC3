@@ -1459,7 +1459,6 @@
         alert(val ? 'บันทึก API Key สำเร็จ พร้อมใช้งาน AI แล้วครับ' : 'ล้างค่า API Key แล้ว');
     }
 
-    // ฟังก์ชันหลักใช้ส่งคำขอไป Gemini 1.5 Flash
     async function askGemini(promptText, isJson = false) {
         const key = localStorage.getItem('PEA_GEMINI_KEY') || '';
         if (!key) {
@@ -1467,12 +1466,12 @@
             throw new Error('กรุณาระบุ API Key ก่อนใช้งานครับ (หาได้ฟรีจาก Google AI Studio)');
         }
         
-        // ใช้ Gemini 1.5 Flash (ฉลาดและเร็วกว่า)
-        const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${key}`;
+        // 🟢 แก้ไขบรรทัดนี้: เติม -latest ต่อท้ายชื่อโมเดล เพื่อให้ดึงเวอร์ชันล่าสุดเสมอ
+        const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent?key=${key}`;
         
         const payload = {
             contents: [{ parts: [{ text: promptText }] }],
-            generationConfig: { temperature: 0.2 } // คำตอบเน้นความแม่นยำ ไม่เพ้อเจ้อ
+            generationConfig: { temperature: 0.2 } 
         };
 
         const response = await fetch(url, {
@@ -1490,16 +1489,13 @@
         return data.candidates?.[0]?.content?.parts?.[0]?.text || "ไม่สามารถวิเคราะห์ข้อมูลได้";
     }
 
-    // ฟังก์ชันย่อข้อมูลส่งให้ AI (ลด Token)
     function getCompressedData() {
-        // จำกัดที่ 150 แถวแรกที่ผ่านการ Filter มา เพื่อป้องกันหลุด Limit 
         return JSON.stringify(filteredData.slice(0, 150).map(d => ({
             id: d.id, BA: d.ba, SYS: d.sys, PCT_M: d.matPct, PCT_C: d.costPct, 
             DAYS: d.days, SLA: d.sla, OVERDUE: d.isOverdue, PROB: d.problem, FM: d.foreman
         })));
     }
 
-    // 1. AI Insights Features (Global)
     async function runAIFeature(type) {
         if(filteredData.length === 0) return alert('ไม่มีข้อมูลสำหรับให้ AI วิเคราะห์ครับ โปรดปรับตัวกรอง');
         
@@ -1513,7 +1509,6 @@
         output.classList.add('hidden');
         document.getElementById('aiTargetCount').innerText = filteredData.length;
 
-        // เลื่อนจอลงมาดู
         resultContainer.scrollIntoView({ behavior: 'smooth', block: 'center' });
 
         const dataStr = getCompressedData();
@@ -1533,7 +1528,7 @@
 
         try {
             const aiText = await askGemini(prompt);
-            output.innerHTML = marked.parse(aiText); // แปลง Markdown เป็น HTML สวยๆ
+            output.innerHTML = marked.parse(aiText); 
             loading.classList.add('hidden');
             loading.classList.remove('flex');
             output.classList.remove('hidden');
@@ -1546,13 +1541,28 @@
         }
     }
 
+    // Helper function for copy to clipboard (Fallback to support iFrame environments)
+    function copyTextToClipboard(text) {
+        const textArea = document.createElement("textarea");
+        textArea.value = text;
+        textArea.style.position = "fixed";
+        textArea.style.left = "-9999px";
+        document.body.appendChild(textArea);
+        textArea.select();
+        try {
+            document.execCommand('copy');
+        } catch (err) {
+            console.error('Copy failed', err);
+        }
+        document.body.removeChild(textArea);
+    }
+
     function copyAIResult() {
         const text = document.getElementById('aiOutput').innerText;
-        navigator.clipboard.writeText(text);
+        copyTextToClipboard(text);
         alert('คัดลอกข้อความเรียบร้อยแล้ว');
     }
 
-    // 2. AI Row-level Features
     function openRowAiModal(rowData) {
         currentRowAiData = rowData;
         document.getElementById('rowAiTitle').innerText = `${rowData.id} (${rowData.ba})`;
@@ -1608,10 +1618,10 @@
 
     function copyRowAiResult() {
         const text = document.getElementById('rowAiTextarea').value;
-        navigator.clipboard.writeText(text);
+        copyTextToClipboard(text);
+        alert('คัดลอกข้อความเรียบร้อยแล้ว');
     }
 
-    // 3. AI Copilot Chatbox
     function toggleChatbox() {
         const box = document.getElementById('aiChatbox');
         if(box.classList.contains('hidden')) {
@@ -1659,7 +1669,6 @@
             div.innerText = text;
         } else {
             div.className = `bg-white p-3 rounded-xl rounded-tl-none shadow-sm border border-gray-100 max-w-[85%] self-start text-gray-700 ${isLoading ? 'animate-pulse text-gray-400' : ''}`;
-            // หากไม่ใช่ตอนโหลด ให้ใช้ marked ปรับสวยงาม
             div.innerHTML = isLoading ? text : marked.parse(text); 
         }
         
